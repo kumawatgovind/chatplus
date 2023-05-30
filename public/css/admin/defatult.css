@@ -1,0 +1,32 @@
+.sidebar-active  {
+	background: rgba(255,255,255,.1);
+}
+
+.nav-treeview .nav-item.active a {
+	background: rgba(255,255,255,.1);
+}
+.has-error .form-control {
+	border-color: #ff2000;
+}
+.has-error .help-block {
+	font-size: 13px;
+	color: #ff2000;
+}
+
+.required label::after {
+  color: #cc0000;
+  content: "*";
+  font-weight: bold;
+  margin-left: 5px;
+}
+label.rmstrict::after {
+  content: "";
+  font-weight: bold;
+  margin-left: 5px;
+}
+
+.form-control.is-invalid, .was-validated .form-control:invalid {
+
+	background-position: right calc(1.375em + .1875rem) center;
+	
+}

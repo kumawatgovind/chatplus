@@ -1,0 +1,148 @@
+.nav-treeview .nav-item.active a {
+	background: rgba(255,255,255,.1);
+}
+.has-error .form-control {
+	border-color: #dc3545;
+}
+.has-error .help-block {
+	font-size: 13px;
+	color: #dc3545;
+}
+
+.required label::after {
+  color: #dc3545;
+  content: "*";
+  font-weight: bold;
+  margin-left: 5px;
+}
+label.rmstrict::after {
+  content: "";
+  font-weight: bold;
+  margin-left: 5px;
+}
+
+.form-control.is-invalid, .was-validated .form-control:invalid {
+
+	background-position: right calc(1.375em + .1875rem) center;
+	
+}
+
+.form-control.is-invalid, .was-validated .form-control:invalid {
+	border-color: #dc3545;
+	padding-right: 0rem;
+	background-image: url("");
+	background-repeat: no-repeat;
+	background-position: right calc(.0rem) center;
+	background-size: calc( .0rem);
+}
+
+.select2-container--default .select2-dropdown .select2-search__field:focus, .select2-container--default .select2-search--inline .select2-search__field:focus{
+	border:0px;
+}
+
+.table td{ word-break: break-all!important;}
+
+.header-shrink {
+    position: fixed;
+    width: calc(100% - 242px);
+}
+
+
+.sidebar-mini.sidebar-collapse .header-shrink {
+    position: fixed;
+    width: calc(100% - 65px);
+}
+
+
+@media only screen and (max-width:991px) {
+.header-shrink {
+    position: fixed;
+    width: calc(100% - 242px);
+}
+.sidebar-mini.sidebar-collapse .header-shrink {
+    position: fixed;
+    width: calc(100% - 0px);
+}
+
+.sidebar-mini.sidebar-open [data-widget=pushmenu]{ margin-left:243px}
+	
+	}
+@media only screen and (max-width:767px) {	
+.sidebar-mini.sidebar-open .navbar-nav .nav-link span {
+    display: none;
+}
+
+.sidebar-mini.sidebar-open .nav-link {
+    padding-right: 0px!important;
+}
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar:hover{width: 4.6rem;}
+
+/*.main-sidebar .nav-sidebar li a:hover p {
+    visibility: hidden !important;
+    display: none !important;
+    opacity: 0 !important;
+}*/
+
+.sidebar-collapse.sidebar-mini .main-sidebar:hover li a p{display: none !important; }
+.sidebar-collapse.sidebar-mini .main-sidebar:hover .brand-link span.brand-text{visibility: hidden !important; }
+
+.sidebar-collapse.sidebar-mini .main-sidebar:hover .user-panel .info{ display:none!important;}
+.textarea-resize{resize: none;}
+
+
+.overlay-block {
+    background: rgba(0, 0, 0, 0.7) none repeat scroll 0 0;
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 9999999;
+}
+.overlay-block-inr {
+    background: #fff none repeat scroll 0 0;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+    display: block;
+    left: 0;
+    margin: auto;
+    max-width: 350px;
+    padding: 0px;
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+}
+.ldr-img {
+    font-size: 22px;
+    padding: 0 0 10px;
+    color: #db3179;
+}
+.ldr-img img {
+    display: block;
+    margin: 0 auto 10px;
+}
+.detailsUpdate .overlay-block {
+    background: rgba(0, 0, 0, 0.9) none repeat scroll 0 0;
+    position: absolute;
+}
+.hide{
+    display: none;
+}
+
+.select2-container .select2-selection--single {
+    height: calc(2.25rem + 2px)!important;
+}
+.select2-container--default .select2-selection--single {
+    border: 1px solid #ced4da!important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    top: 6px!important;
+}
+
+/* table button css */
+table .btn {margin: 1px;}
+.card-body tr td {vertical-align: middle;}
