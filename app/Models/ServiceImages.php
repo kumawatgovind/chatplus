@@ -5,16 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PostAttachment extends Model
+class ServiceImages extends Model
 {
     use HasFactory;
     protected $fillable = [
-        "post_id",
+        "service_id",
         "user_id",
         "title",
         "name",
         "url",
-        "type",
         "ordering"
     ];
 
@@ -24,18 +23,18 @@ class PostAttachment extends Model
      * @var array
      */
     protected $hidden = [
-        'post_id',
+        'service_id',
         'updated_at',
         'created_at',
     ];
     
     /**
-     * post
+     * serviceProfile
      *
      * @return void
      */
-    public function post()
+    public function serviceProfile()
     {
-        return $this->belongsTo(\App\Models\Post::class);
+        return $this->belongsTo(\App\Models\ServiceProfile::class);
     }
 }

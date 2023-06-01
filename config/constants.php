@@ -31,6 +31,7 @@ return [
         "api_token",
         "status",
         "profile_image",
+        "firebase_id",
         "firebase_email",
         "firebase_password",
         "uId",

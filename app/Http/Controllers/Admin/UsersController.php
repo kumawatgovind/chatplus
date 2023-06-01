@@ -30,7 +30,7 @@ class UsersController extends Controller
      */
     public function index(Request $request)
     {
-        $users = User::sortable(['created_at' => 'desc'])->withCount('posts')
+        $users = User::sortable(['created_at' => 'desc'])
         ->filter($request->query('keyword'))
         ->paginate(config('get.ADMIN_PAGE_LIMIT'));
         

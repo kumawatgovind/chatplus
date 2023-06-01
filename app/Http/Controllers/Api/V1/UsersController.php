@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Page;
 use App\Models\User;
-use App\Models\ContactSync;
+use App\Models\ServiceProfile;
+use App\Models\ServiceImages;
 use Carbon\Carbon;
 use Mail, Exception, DB;
 
@@ -49,21 +50,7 @@ class UsersController extends Controller
                 $updateData['device_type'] = isset($request->device_type) ? $request->device_type : "";
                 $updateData['api_token'] = $verifiedMobile->createToken(env('APP_NAME'))->plainTextToken;
                 User::where('id', $verifiedMobile->id)->update($updateData);
-                $userData = User::select(config('constants.USER_SELECT_FIELDS'))
-                ->with(['profiles' => function ($query) {
-                    $query->select(config('constants.USER_SELECT_FIELDS'));
-                }])
-                ->where('id', $verifiedMobile->id)->first();
-                $updateResponse = [];
-                if (!empty($userData)) { 
-                    if ($userData->profiles) {
-                        foreach ($userData->profiles as $profile) {
-                            $updateResponse[] = $profile;
-                        }
-                        unset($userData->profiles);
-                    }
-                    $updateResponse[] = $userData;
-                }
+                $updateResponse = self::getUser($verifiedMobile->id);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('mobile_verified');
@@ -86,6 +73,28 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
+    private static function getUser($id)
+    {
+        $userData = User::select(config('constants.USER_SELECT_FIELDS'))
+        ->with(['userServices', 'userServices.serviceImages'])
+        ->where('id', $id)->first();
+        $updateResponse = [];
+        if (!empty($userData)) { 
+            if (!empty($userData->userServices)) {
+                // dd($userData->userServices);
+                if (!empty($userData->userServices->serviceImages)) {
+                    $responseImage = [];
+                    foreach ($userData->userServices->serviceImages as $serviceImage) {
+                        $responseImage[] = $serviceImage->url;
+                    }
+                    unset($userData->userServices->serviceImages);
+                    $userData->userServices->serviceImages = $responseImage;
+                }
+            }
+            $updateResponse = $userData;
+        }
+        return $updateResponse;
+    }
     /**
      * Check UserName in database.
      * 
@@ -136,7 +145,7 @@ class UsersController extends Controller
      * @param Request $request Illuminate\Http\Request
      * @return [].
      */
-    public function createProfile(Request $request)
+    public function register(Request $request)
     {
         $data = [];
         try {
@@ -162,15 +171,18 @@ class UsersController extends Controller
             $user->profile_image = $request->request->get('profile_image', false);
             $user->device_id = $request->request->get('device_id', false);
             $user->device_type = $request->request->get('device_type', false);
+            $user->firebase_id = $request->request->get('firebase_id', false);
             $user->firebase_email = $request->request->get('firebase_email', false);
             $user->firebase_password = $request->request->get('firebase_password', false);
+            $user->fcm_token = $request->request->get('fcm_token', false);
             $user->uId = $request->request->get('uId', false);
             $user->status = 1;
+            
             $updateData = [];
             if ($user->save()) {
                 $updateData['api_token'] = $user->createToken(env('APP_NAME'))->plainTextToken;
                 User::where('id', $user->id)->update($updateData);
-                $userData = User::select(config('constants.USER_SELECT_FIELDS'))->where('id', $user->id)->first();
+                $userData = self::getUser($user->id);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_created');
@@ -193,6 +205,88 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
+    
+    /**
+     * create Profile.
+     * 
+     * @param Request $request Illuminate\Http\Request
+     * @return [].
+     */
+    public function createServiceProfile(Request $request)
+    {
+        $data = [];
+        try {
+            // $validator = Validator::make($request->all(), [
+            //     'username' => 'required|unique:users,username',
+            //     'name' => 'required|min:3',
+            //     'email' => 'nullable|email',
+            //     'country_code' => 'required',
+            //     'phone_number' => 'required',
+            //     'profile_image' => 'nullable',
+            // ]);
+            // if ($validator->fails()) {
+            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            // }
+            // $authUser = $request->get('Auth');
+            $serviceProfile = new ServiceProfile();
+            $serviceProfile->user_id = $authUserId = $request->request->get('user_id', 0);
+            $serviceProfile->category_id = $request->request->get('category_id', 0);
+            $serviceProfile->service_name = $request->request->get('service_name', '');
+            $serviceProfile->email = $request->request->get('email', '');
+            $serviceProfile->contact_person = $request->request->get('contact_person', '');
+            $serviceProfile->mobile_number = $request->request->get('mobile_number', '');
+            $serviceProfile->street_name = $request->request->get('street_name', '');
+            $serviceProfile->building_name = $request->request->get('building_name', '');
+            $serviceProfile->pin_code = $request->request->get('pin_code', '');
+            $serviceProfile->city = $request->request->get('city', '');
+            $serviceProfile->state = $request->request->get('state', '');
+            $serviceProfile->country = $request->request->get('country', '');
+            $serviceProfile->website = $request->request->get('website', '');
+            $serviceProfile->description = $request->request->get('description', '');
+            $serviceProfile->latitude = $request->request->get('latitude', '');
+            $serviceProfile->longitude = $request->request->get('longitude', '');
+            $serviceProfile->status = 1;
+            $servicesProfileImages = $request->request->get('services_profile_images') ?? [];
+            if ($serviceProfile->save()) {
+                if (!empty($servicesProfileImages)) {
+                    $ordering = 1;
+                    foreach ($servicesProfileImages as $value) {
+                        if (!empty($value)) {
+                            $attachmentData = [];
+                            $attachmentData['service_id'] = $serviceProfile->id;
+                            $attachmentData['user_id'] = $authUserId;
+                            $attachmentData['title'] = '';
+                            $attachmentData['name'] = basename($value);
+                            $attachmentData['url'] = $value;
+                            $attachmentData['ordering'] = $ordering;
+                            ServiceImages::create($attachmentData);
+                            $ordering++;
+                        }
+                    }
+                }
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('profile_created');
+                $data['data'] = [];
+            } else {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('profile_not_created');
+                $data['data'] = [];
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+
     /**
      * uploadDocument.
      * 
@@ -214,28 +308,16 @@ class UsersController extends Controller
             $responseData = [];
             if (isset($_FILES['upload_file']['name']) && $_FILES['upload_file']['name'] != '') {
                 switch ($type) {
-                    case 'profile_image':
+                    case 'profile_photo':
                         $responseData[$type] = self::fileUpload($request);
                         break;
-                    case 'pan_card':
+                    case 'services_profile_images':
                         $responseData[$type] = self::fileUpload($request);
                         break;
-                    case 'passport':
+                    case 'product_images':
                         $responseData[$type] = self::fileUpload($request);
                         break;
-                    case 'dl_front':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    case 'dl_back':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    case 'aadhar_front':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    case 'aadhar_back':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    case 'other':
+                    case 'post_images':
                         $responseData[$type] = self::fileUpload($request);
                         break;
                     default:
@@ -273,12 +355,27 @@ class UsersController extends Controller
             $type = $request->request->get('type', false);
             $fileName = $request->file('upload_file');
             $upload_file = time() . '.' . $fileName->getClientOriginalExtension();
-            if ($type == 'profile_picture') {
-                $path = asset('storage/profile_images/');
-                $fileName->move(storage_path('app/public/profile_images/'), $upload_file);
-            } else {
-                $path = asset('storage/documents/');
-                $fileName->move(storage_path('app/public/documents/'), $upload_file);
+            
+            switch ($type) {
+                case 'profile_photo':
+                    $path = asset('storage/profile/');
+                    $fileName->move(storage_path('app/public/profile/'), $upload_file);
+                    break;
+                case 'services_profile_images':
+                    $path = asset('storage/services/');
+                    $fileName->move(storage_path('app/public/services/'), $upload_file);
+                    break;
+                case 'product_images':
+                    $path = asset('storage/products/');
+                    $fileName->move(storage_path('app/public/products/'), $upload_file);
+                    break;
+                case 'post_images':
+                    $path = asset('storage/posts/');
+                    $fileName->move(storage_path('app/public/posts/'), $upload_file);
+                    break;
+                default:
+                    $upload_file = '';
+                    $path = '';
             }
             $data['status'] = true;
             $data['code'] = config('response.HTTP_OK');
@@ -299,153 +396,6 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-
-    /**
-     * contactSync
-     *
-     * @param  mixed $request
-     * @return void
-     */
-    public function contactSync(Request $request)
-    {
-        $data = [];
-        try {
-            $user = $request->get('Auth');
-            $validator = Validator::make($request->all(), [
-                'contacts' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            }
-            $contacts = $contactData = (array) $request->request->get('contacts');
-            $phoneNumbers = array_column($contacts, 'number');
-
-            $existUsers = User::whereIn('phone_number', $phoneNumbers)->where('parent_id', 0)->get();
-
-            if (!empty($contacts)) {
-                foreach ($contacts as $cKey => $contact) {
-                    $contacts[$cKey]['user_id'] = $user->id;
-                    $contacts[$cKey]['cid'] = $contact['id'];
-                    unset($contacts[$cKey]['id']);
-                    $contactData[$cKey]['exist'] = false;
-                    $contactData[$cKey]['profile'] = (object) [];
-                    if ($existUsers->count() > 0) {
-                        foreach ($existUsers as $user) {
-                            if ($contact['number'] == $user->phone_number) {
-                                $contactData[$cKey]['exist'] = true;
-                                $contactData[$cKey]['profile'] = $user;
-                            }
-                        }
-                    }
-                }
-            }
-            $uniquely = ['number'];
-            $update = ['user_id', 'code', 'cid', 'name'];
-            ContactSync::upsert($contacts, $update, $uniquely);
-            $data['status'] = true;
-            $data['code'] = config('response.HTTP_OK');
-            $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
-            $data['data'] = $contactData;
-        } catch (Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
-
-    /**
-     * follwUserRequest
-     *
-     * @param  mixed $request
-     * @return void
-     */
-    public function follwUserRequest(Request $request)
-    {
-        $data = [];
-        try {
-            $validator = Validator::make($request->all(), [
-                'user_id' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            }
-            $authUser = $request->get('Auth');
-            if ($authUser->id == $request->user_id) {
-                $data['status'] = false;
-                $data['code'] =  config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('self_follow_not');
-                return ApiGlobalFunctions::responseBuilder($data);
-            }
-
-            $authUserObj = User::find($authUser->id);
-            $user = User::find($request->user_id);
-            $response = $authUserObj->toggleFollow($user);
-            $status = false;
-            $data['status'] = true;
-            $data['code'] = config('response.HTTP_OK');
-            $data['message'] = ApiGlobalFunctions::messageDefault('unfollow_update');
-            if (!empty($response['attached'])) {
-                $status = true;
-                $data['status'] = true;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('follow_update');
-            }
-            $data['data'] = [
-                'user_id' => $user->id,
-                'followers_count' => $authUserObj->followers->count(),
-                'following_count' => $authUserObj->followings->count(),
-                'follow_status' => $status,
-            ];
-        } catch (Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
-    
-    /**
-     * getFollowerFollowing
-     *
-     * @param  mixed $request
-     * @return void
-     */
-    public function getFollowerFollowing(Request $request)
-    {
-        $data = $response = [];
-        try {
-            $authUser = $request->get('Auth');
-            $authUserObj = User::find($authUser->id);
-            $response = [
-            'followers_count' => $authUserObj->followers->count(),
-            'followers' => $authUserObj->followers,
-            'following_count' => $authUserObj->followings->count(),
-            'following' => $authUserObj->followings,
-            ];
-            $data['status'] = true;
-            $data['code'] = config('response.HTTP_OK');
-            $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
-            $data['data'] = $response;
-        } catch (Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
 
     /**
      * getProfile
@@ -471,12 +421,12 @@ class UsersController extends Controller
                 } else {
                     $userId = $user->id;
                 }
-                $userDeatils = User::withCount(['followers','followings'])->where('id', $userId)->first();
-                if (!empty($userDeatils)) {
+                $userDetails = User::where('id', $userId)->first();
+                if (!empty($userDetails)) {
                     $data['status'] = true;
                     $data['code'] = config('response.HTTP_OK');
                     $data['message'] = ApiGlobalFunctions::messageDefault('profile_get');
-                    $data['data'] = $userDeatils;
+                    $data['data'] = $userDetails;
                 } else {
                     $data['status'] = false;
                     $data['code'] = config('response.HTTP_OK');

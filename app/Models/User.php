@@ -38,7 +38,6 @@ class User extends Authenticatable
         "bio",
         "website",
         "dob",
-        "janam_din",
         "email_verified_at",
         "password",
         'two_factor_secret',
@@ -101,8 +100,7 @@ class User extends Authenticatable
         'profile_base_url',
         'registered_date',
         'profile_last_updated_date',
-        'country_phone_number',
-        'is_follow',
+        'country_phone_number'
     ];
 
     /**
@@ -125,8 +123,8 @@ class User extends Authenticatable
      */
     public function getProfileBaseUrlAttribute()
     {
-        // return asset('storage/profile_images/');
-        return !empty($this->profile_image) ? $this->profile_image : "";
+        return asset('storage/profile/');
+        // return !empty($this->profile_image) ? $this->profile_image : "";
     }
 
     /**
@@ -167,22 +165,6 @@ class User extends Authenticatable
         return $phoneNumber;
     }
 
-    /**
-     * getIsFollowAttribute
-     *
-     * @param  mixed $value
-     * @return void
-     */
-    public function getIsFollowAttribute($value)
-    {
-        if (!empty(\Request::get('Auth'))) {
-            return $this->followers()
-            ->where('user_follower.follower_id', \Request::get('Auth')->id)
-            ->exists();
-        }else {
-            return false;
-        }
-    }
 
     /**
      * main_profile
@@ -195,186 +177,13 @@ class User extends Authenticatable
     }
 
     /**
-     * profiles
+     * userServices
      *
      * @return void
      */
-    public function profiles()
+    public function userServices()
     {
-        return $this->hasMany(\App\Models\User::class, 'parent_id');
-    }
-
-    /**
-     * posts
-     *
-     * @return void
-     */
-    public function posts()
-    {
-        return $this->hasMany(\App\Models\Post::class, 'user_id');
-    }
-
-    /**
-     * mentionedPosts
-     *
-     * @return void
-     */
-    public function mentionedPosts()
-    {
-        return $this->belongsToMany('App\Models\Post')->withTimeStamps();
-    }
-
-    /**
-     * postView
-     *
-     * @return void
-     */
-    public function postView()
-    {
-        return $this->belongsToMany('App\Models\Post', 'post_view', 'user_id', 'post_id')->withTimeStamps();
-    }
-
-    /**
-     * postRePost
-     *
-     * @return void
-     */
-    public function rePost()
-    {
-        return $this->belongsToMany('App\Models\Post', 'post_repost', 'user_id', 'post_id')->withTimeStamps();
-    }
-
-    /**
-     * postLike
-     *
-     * @return void
-     */
-    public function postLike()
-    {
-        return $this->belongsToMany('App\Models\Post', 'post_like', 'user_id', 'post_id')->withTimeStamps();
-    }
-
-    /**
-     * The has Many Relationship
-     *
-     * @var array
-     */
-    public function comments()
-    {
-        return $this->hasMany(Comment::class)->where('parent_id', 0);;
-    }
-
-    /**
-     * mentionedComments
-     *
-     * @return void
-     */
-    public function mentionedComments()
-    {
-        return $this->belongsToMany('App\Models\Comment')->withTimeStamps();
-    }
-
-    /**
-     * followings
-     *
-     * @return void
-     */
-    public function followings(): object
-    {
-        return $this->belongsToMany(User::class, 'user_follower', 'follower_id', 'following_id')
-            ->withTimestamps();
-    }
-
-    /**
-     * followers
-     *
-     * @return void
-     */
-    public function followers(): object
-    {
-        return $this->belongsToMany(User::class, 'user_follower', 'following_id', 'follower_id')
-            ->withTimestamps();
-    }
-    
-    /**
-     * hasRequestedToFollow
-     *
-     * @param  @param \Illuminate\Database\Eloquent\Model|int $user
-     * @return bool
-     */
-    public function hasRequestedToFollow($user): bool
-    {
-        if ($user instanceof Model) {
-            $user = $user->getKey();
-        }
-
-        /* @var \Illuminate\Database\Eloquent\Model $this */
-        if ($this->relationLoaded('followings')) {
-            return $this->followings
-                ->where('pivot.accepted_at', '===', null)
-                ->contains($user);
-        }
-
-        return $this->followings()
-            ->wherePivot('accepted_at', null)
-            ->where($this->getQualifiedKeyName(), $user)
-            ->exists();
-    }
-
-    /**
-     * isFollowing
-     *
-     * @param \Illuminate\Database\Eloquent\Model|int $user
-     * @return bool
-     */
-    public function isFollowing($user): bool
-    {
-        return $this->followings()
-            //->wherePivot('accepted_at', '!=', null)
-            ->where('user_follower.follower_id', \Request::get('Auth')->id)
-            ->exists();
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model|int $user
-     *
-     * @return bool
-     */
-    public function isFollowedBy($user)
-    {
-
-        return $this->followers()->where($this->getQualifiedKeyName(), $user)->exists();
-    }
-
-    public function toggleFollow($user)
-    {
-        return $this->followings()->toggle($user);
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model|int $user
-     *
-     * @return bool
-     */
-    public function areFollowingEachOther($user)
-    {
-        return $this->isFollowing($user) && $this->isFollowedBy($user);
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model|int $user
-     */
-    public function rejectFollowRequestFrom($user)
-    {
-        $this->followers()->detach($user);
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model|int $user
-     */
-    public function acceptFollowRequestFrom($user)
-    {
-        $this->followers()->updateExistingPivot($user, ['accepted_at' => now()]);
+        return $this->hasOne(\App\Models\ServiceProfile::class, 'user_id', 'id');
     }
 
    

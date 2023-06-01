@@ -108,12 +108,11 @@ endif
                   <td>{{ $user->posts_count }}</td>
                   <td>{{ $user->created_at->format(config('get.ADMIN_DATE_FORMAT')) }}</td>
                   <td class="actions action-btn-tab">
-                    <!-- <a href="{{ route('admin.users.show',['user' => $user->id]) }}" class="btn btn-warning btn-xs" data-toggle="tooltip" alt="View setting" title="View {{ $user->first_name }}" data-original-title="View"><i class="fa fa-fw fa-eye"></i></a> -->
+                    <a href="{{ route('admin.users.show',['user' => $user->id]) }}" class="btn btn-warning btn-xs" data-toggle="tooltip" alt="View setting" title="View {{ $user->first_name }}" data-original-title="View"><i class="fa fa-fw fa-eye"></i></a>
                     @if($canCreate)
-                    {{-- <a href="{{ route('admin.users.edit',['user' => $user->id]) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit {{ $user->first_name }}" title="Edit {{ $user->first_name }}" data-original-title="Edit"><i class="fa fa-edit"></i></a>
-                    <a href="javascript:void(0);" class="confirmDeleteBtn btn btn-danger btn-xs" data-toggle="tooltip" alt="Delete {{ $user->first_name }}" title="Delete User" data-url="{{ route('admin.users.destroy', $user->id) }}" data-title="{{ $user->name }}"><i class="fa fa-trash"></i></a> --}}
-                    <br>
-                    <a href="{{ route('admin.posts.create',['u' => $user->id]) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Add Post {{ $user->first_name }}" title="Add Post {{ $user->first_name }}" data-original-title="Edit">Add Post</a>
+                    <a href="{{ route('admin.users.edit',['user' => $user->id]) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit {{ $user->first_name }}" title="Edit {{ $user->first_name }}" data-original-title="Edit"><i class="fa fa-edit"></i></a>
+                    <!-- <br> -->
+                    <a href="javascript:void(0);" class="confirmDeleteBtn btn btn-danger btn-xs" data-toggle="tooltip" alt="Delete {{ $user->first_name }}" title="Delete User" data-url="{{ route('admin.users.destroy', $user->id) }}" data-title="{{ $user->name }}"><i class="fa fa-trash"></i></a>
                     @endif
                   </td>
                 </tr>

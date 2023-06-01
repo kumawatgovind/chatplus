@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Cviebrock\EloquentSluggable\Sluggable;
 use Kyslik\ColumnSortable\Sortable;
 
 class Category extends Model
 {
-    use HasFactory, Sluggable, Sortable;
+    use HasFactory, Sortable;
     
     /**
      * fillable
@@ -17,9 +16,9 @@ class Category extends Model
      * @var array
      */
     protected $fillable = [
-        "title",
-        "slug",
         "parent_id",
+        "name",
+        "icon",
         "status"
     ];
     
@@ -28,33 +27,27 @@ class Category extends Model
      *
      * @var array
      */
-    public $sortable = ["title",  "slug", 'status', 'created_at', 'updated_at'];
+    public $sortable = ["name", 'status', 'created_at', 'updated_at'];
     
     /**
      * appends
      *
      * @var array
      */
-    // protected $appends = [
-    //     'parent'
-    // ];
+    protected $appends = [
+        'icon_url'
+    ];
         
-     /**
-      * sluggable
-      *
-      * @return array
-      */
-     public function sluggable():array
-     {
-         return [
-             'slug' => [
-                 'source' => 'custom_slug',
-                 'unique' => true,
-                 'separator' => '-',
-                 'onUpdate' => true,
-             ]
-         ];
-     }
+    /**
+     * Update profile_created Columns.
+     *
+     * @var string
+     */
+    public function getIconUrlAttribute()
+    {
+        return asset('storage/category/'.$this->icon);
+        // return !empty($this->profile_image) ? $this->profile_image : "";
+    } 
       
      /**
       * parent
@@ -107,7 +100,7 @@ class Category extends Model
     {
         if (!empty($keyword)) {
             $query->where(function ($query) use ($keyword) {
-                $query->where('title', 'LIKE', '%' . $keyword . '%');
+                $query->where('name', 'LIKE', '%' . $keyword . '%');
             });
         }
         return $query;

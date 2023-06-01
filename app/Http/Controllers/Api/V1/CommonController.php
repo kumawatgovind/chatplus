@@ -7,9 +7,6 @@ use App\Traits\ApiGlobalFunctions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
-use App\Models\City;
-use App\Models\State;
-use App\Models\Country;
 use App\Models\Category;
 use Exception;
 use Carbon\Carbon;
@@ -25,24 +22,25 @@ class CommonController extends Controller
      * @param Request $request Illuminate\Http\Request
      * @return [].
      */
-    public function categoryList()
+    public function categoryList($categoryId = 0)
     {
+        
         $data = [];
         try {
-            $categories = Category::select('id', 'title', 'parent_id')
-            ->with(['childrenCategory' => function($q) {
-                return $q->select('id', 'title', 'parent_id');
-            }])->where(['status' => 1, 'parent_id' => 0])->get();
+            $categories = Category::select('id', 'name', 'icon');
+            if ($categoryId) {
+                $categories = $categories->where(['status' => 1, 'parent_id' => $categoryId]);
+            } else {
+                $categories = $categories->where(['status' => 1, 'parent_id' => 0]);
+            }
+            $categoryData = $categories->get();
             $result = [];
-            if ($categories->count() > 0) {
-                foreach ($categories as $cKey => $category) {
+            if ($categoryData->count() > 0) {
+                foreach ($categoryData as $cKey => $category) {
                     $result[$cKey]['id'] = $category->id;
-                    $result[$cKey]['title'] = $category->title;
-                    if ($category->childrenCategory->count() > 0) {
-                        foreach ($category->childrenCategory as $sCkey => $childrenCategory) {
-                            $result[$cKey]['sub_category'][$sCkey]['id'] = $childrenCategory->id;
-                            $result[$cKey]['sub_category'][$sCkey]['title'] = $childrenCategory->title;
-                        }
+                    $result[$cKey]['name'] = $category->name;
+                    if (!empty($category->icon)) {
+                        $result[$cKey]['icon'] = $category->icon_url;
                     }
                 }
             }
