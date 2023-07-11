@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\PaymentController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
+
 Route::prefix('config')->group(function () {
     Route::get('/phpinfo', function () {
         phpinfo();
@@ -28,8 +29,14 @@ Route::prefix('config')->group(function () {
 
     Route::get('/location', function () {
         echo __FILE__;
-        echo "<pre>";print_r($_SERVER);
+        echo "<pre>";
+        print_r($_SERVER);
         return '<h1>google analytics</h1>';
+    });
+
+    Route::get('/storage-link', function () {
+        Artisan::call('storage:link');
+        return '<h1>Storage linked</h1>';
     });
 
     Route::get('/run-migration', function () {
@@ -50,6 +57,8 @@ Route::get('/', function () {
     return view('home');
 });
 
+Route::post('/stripe-webhook', [PaymentController::class, 'stripeWebhook']);
+Route::get('/check-route', [PaymentController::class, 'checkRoute']);
 // Route::middleware([
 //     'auth:sanctum',
 //     config('jetstream.auth_session'),

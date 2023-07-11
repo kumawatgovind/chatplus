@@ -5,15 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Kyslik\ColumnSortable\Sortable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ServiceProfile extends Model
 {
-    use HasFactory, Sortable;
+    use HasFactory, Sortable, SoftDeletes;
 
-    
+
     protected $fillable = [
         "user_id",
         "category_id",
+        "referral_code",
         "service_name",
         "email",
         "contact_person",
@@ -23,15 +25,15 @@ class ServiceProfile extends Model
         'pin_code',
         'city',
         'state',
-        'country',
+        'locality',
         'website',
         'description',
         'latitude',
         'longitude',
     ];
-    
+
     public $sortable = ['status', 'created_at', 'updated_at'];
-    
+
     /**
      * The attributes that should be hidden for arrays.
      *
@@ -49,7 +51,7 @@ class ServiceProfile extends Model
      */
     protected $appends = [
         'added_date',
-        'human_readable',
+        'base_path',
     ];
 
     /**
@@ -64,17 +66,17 @@ class ServiceProfile extends Model
     }
 
     /**
-     * getHumanReadableAttribute
+     * Update base_path Columns.
      *
-     * @param  mixed $value
-     * @return void
+     * @var string
      */
-    public function getHumanReadableAttribute($value)
+    public function getBasePathAttribute()
     {
-        return !empty($this->updated_at) ? $this->updated_at->diffForHumans() : "";
+        return asset('storage/services/');
+        // return !empty($this->profile_image) ? $this->profile_image : "";
     }
 
-    
+
     /**
      * serviceImages
      *
@@ -82,10 +84,19 @@ class ServiceProfile extends Model
      */
     public function serviceImages()
     {
-        return $this->hasMany(\App\Models\ServiceImages::class, 'service_id', 'id');
+        return $this->hasMany(\App\Models\ServiceImage::class, 'service_id', 'id');
     }
 
-    
+    /**
+     * serviceBusinessHour
+     *
+     * @return void
+     */
+    public function serviceBusinessHour()
+    {
+        return $this->hasMany(\App\Models\ServiceBusinessHour::class, 'service_id', 'id');
+    }
+
     /**
      * user
      *
@@ -105,16 +116,8 @@ class ServiceProfile extends Model
     {
         return $this->belongsTo(\App\Models\Category::class);
     }
-    
-    /**
-     * The has Many Relationship
-     *
-     * @var array
-     */
-    public function comments()
-    {
-        return $this->hasMany(Comment::class)->where('parent_id', 0);;
-    }
+
+
     /**
      * scopeUserFilter
      *

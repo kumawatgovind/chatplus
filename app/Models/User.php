@@ -28,6 +28,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         "parent_id",
+        "referral_code",
         "name",
         "email",
         "username",
@@ -36,8 +37,10 @@ class User extends Authenticatable
         "profile_image",
         "cover_image",
         "bio",
-        "website",
         "dob",
+        "janam_din",
+        "gender",
+        "marital_status",
         "email_verified_at",
         "password",
         'two_factor_secret',
@@ -51,9 +54,9 @@ class User extends Authenticatable
         "device_id",
         "device_type",
         "api_token",
+        "firebase_id",
         "firebase_email",
         "firebase_password",
-        "uId",
         "created_at",
         "updated_at",
     ];
@@ -149,7 +152,7 @@ class User extends Authenticatable
         return !empty($this->updated_at) ? strtotime($this->updated_at) : "";
     }
 
-    
+
     /**
      * getProfileLastUpdatedDateAttribute
      *
@@ -181,19 +184,130 @@ class User extends Authenticatable
      *
      * @return void
      */
-    public function userServices()
+    public function userServicesProfile()
     {
         return $this->hasOne(\App\Models\ServiceProfile::class, 'user_id', 'id');
     }
 
-   
-    public function subscription()
+    /**
+     * serviceProduct
+     *
+     * @return void
+     */
+    public function serviceProduct()
+    {
+        return $this->hasMany(\App\Models\ServiceProduct::class, 'user_id', 'id');
+    }
+
+    /**
+     * userSubscribe
+     *
+     * @return void
+     */
+    public function userSubscribe()
+    {
+        return $this->hasMany(\App\Models\Subscription::class, 'user_id', 'id');
+    }
+
+    /**
+     * userSponsor
+     *
+     * @return void
+     */
+    public function userSponsor()
+    {
+        return $this->hasMany(\App\Models\Sponsor::class, 'sponsor_user_id', 'id');
+    }
+
+    /**
+     * userSponsored
+     *
+     * @return void
+     */
+    public function userSponsored()
+    {
+        return $this->hasMany(\App\Models\Sponsor::class, 'sponsored_user_id', 'id');
+    }
+
+    /**
+     * userEarnings
+     *
+     * @return void
+     */
+    public function userEarnings()
+    {
+        return $this->hasMany(\App\Models\UserEarning::class, 'user_id', 'id');
+    }
+
+    /**
+     * userSubscription
+     *
+     * @return void
+     */
+    public function userSubscription()
+    {
+        return $this->hasOne(\App\Models\UserSubscription::class, 'user_id', 'id')->where('is_active', '=', 1);
+    }
+
+    /**
+     * activeSubscription
+     *
+     * @return void
+     */
+    public function activeSubscription()
     {
         $date = date('Y-m-d H:i:s');
-        return $this->hasOne(\App\Models\Membership\Subscription::class, 'user_id', 'id')->where('start_date', '<=', $date)->where('end_date', '>=', $date);
+        return $this->hasOne(\App\Models\UserSubscription::class, 'user_id', 'id')->where('start_date', '<=', $date)->where('end_date', '>=', $date);
+    }
+
+    /**
+     * userStatus
+     *
+     * @return void
+     */
+    public function userStatus()
+    {
+        return $this->hasMany(\App\Models\UserStatus::class, 'user_id', 'id');
+    }
+
+    /**
+     * reportedUser
+     *
+     * @return void
+     */
+    public function reportedUser()
+    {
+        return $this->hasOne(\App\Models\ReportedSpam::class, 'item_id', 'id')->where('type', '=', 1);
+    }
+
+    /**
+     * reportedByUser
+     *
+     * @return void
+     */
+    public function reportedByUser()
+    {
+        return $this->belongsTo(\App\Models\ReportedSpam::class, 'reported_by');
     }
 
 
+    /**
+     * userServiceProductBookmark
+     *
+     * @return void
+     */
+    public function userServiceProductBookmark()
+    {
+        return $this->belongsToMany('App\Models\ServiceProduct', 'service_product_bookmark', 'user_id', 'service_product_id')->withTimeStamps();
+    }
+
+    /**
+     * scopeFilter
+     *
+     * @param  mixed $query
+     * @param  mixed $keyword
+     * @return void
+     */
     public function scopeFilter($query, $keyword)
     {
         if (!empty($keyword)) {
@@ -216,6 +330,18 @@ class User extends Authenticatable
     public function scopeStatus($query, $status = 1)
     {
         return $query->where('status', $status);
+    }
+
+    /**
+     * scopeBlock
+     *
+     * @param  mixed $query
+     * @param  mixed $status
+     * @return void
+     */
+    public function scopeBlock($query, $status = 1)
+    {
+        return $query->where('is_block', $status);
     }
 
 

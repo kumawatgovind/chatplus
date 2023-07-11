@@ -5,19 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Kyslik\ColumnSortable\Sortable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Tag extends Model
+class Customer extends Model
 {
-    use HasFactory, Sortable;
+    use HasFactory, Sortable, SoftDeletes;
 
-    
-    /**
-     * fillable
-     *
-     * @var array
-     */
-    protected $fillable = ["name", "status"];
-    
+
+    protected $fillable = [
+        "user_id",
+        "name",
+        "contact_number",
+        "city",
+        "locality",
+        "description",
+        "status",
+    ];
+
+    public $sortable = ['status', 'created_at', 'updated_at'];
+
     /**
      * The attributes that should be hidden for arrays.
      *
@@ -26,28 +32,39 @@ class Tag extends Model
     protected $hidden = [
         'updated_at',
         'created_at',
-        'pivot'
     ];
 
     /**
-     * mentionedPosts
+     * The accessors to append to the model's array form.
      *
+     * @var array
+     */
+    protected $appends = [
+        'added_date',
+    ];
+
+    /**
+     * getAddedDateAttribute
+     *
+     * @param  mixed $value
      * @return void
      */
-    public function mentionedPosts()
+    public function getAddedDateAttribute($value)
     {
-        return $this->belongsToMany('App\Models\Post')->withTimeStamps();
+        return !empty($this->created_at) ? strtotime($this->created_at) : "";
     }
 
     /**
-     * mentionedComments
+     * user
      *
      * @return void
      */
-    public function mentionedComments()
+    public function user()
     {
-        return $this->belongsToMany('App\Models\Comment')->withTimeStamps();
+        return $this->belongsTo(\App\Models\User::class);
     }
+
+
     /**
      * scopeFilter
      *
@@ -58,11 +75,11 @@ class Tag extends Model
     public function scopeFilter($query, $keyword)
     {
         if (!empty($keyword)) {
-            $query->where('name', $keyword);
+            $query->where('title', $keyword);
         }
         return $query;
     }
-     /**
+    /**
      * scopeStatus
      *
      * @param  mixed $query

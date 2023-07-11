@@ -5,15 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ServiceImages extends Model
+class UserStatusMedia extends Model
 {
     use HasFactory;
     protected $fillable = [
-        "service_id",
-        "user_id",
-        "title",
+        "status_id",
         "name",
-        "url",
         "ordering"
     ];
 
@@ -23,18 +20,18 @@ class ServiceImages extends Model
      * @var array
      */
     protected $hidden = [
-        'service_id',
+        'status_id',
         'updated_at',
         'created_at',
     ];
-    
+
     /**
-     * serviceProfile
+     * userStatus
      *
      * @return void
      */
-    public function serviceProfile()
+    public function userStatus()
     {
-        return $this->belongsTo(\App\Models\ServiceProfile::class);
+        return $this->belongsTo(\App\Models\UserStatus::class, 'status_id');
     }
 }

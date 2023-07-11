@@ -2,20 +2,17 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Traits\ApiGlobalFunctions;
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Helpers\Helper;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
+use App\Helpers\ReferralSystem;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\Controller;
+use App\Traits\ApiGlobalFunctions;
+use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Models\User;
-use App\Models\ServiceProfile;
-use App\Models\ServiceImages;
+use App\Repositories\SponsorRepository;
+use App\Repositories\UserRepository;
 use Carbon\Carbon;
-use Mail, Exception, DB;
+use Mail, Exception, Auth, Hash, Session;
 
 class UsersController extends Controller
 {
@@ -50,7 +47,7 @@ class UsersController extends Controller
                 $updateData['device_type'] = isset($request->device_type) ? $request->device_type : "";
                 $updateData['api_token'] = $verifiedMobile->createToken(env('APP_NAME'))->plainTextToken;
                 User::where('id', $verifiedMobile->id)->update($updateData);
-                $updateResponse = self::getUser($verifiedMobile->id);
+                $updateResponse = UserRepository::getUser($verifiedMobile->id);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('mobile_verified');
@@ -59,7 +56,6 @@ class UsersController extends Controller
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('verification_failed');
-                $data['data'] = [];
             }
         } catch (Exception $e) {
             $data['status'] = false;
@@ -73,28 +69,7 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-    private static function getUser($id)
-    {
-        $userData = User::select(config('constants.USER_SELECT_FIELDS'))
-        ->with(['userServices', 'userServices.serviceImages'])
-        ->where('id', $id)->first();
-        $updateResponse = [];
-        if (!empty($userData)) { 
-            if (!empty($userData->userServices)) {
-                // dd($userData->userServices);
-                if (!empty($userData->userServices->serviceImages)) {
-                    $responseImage = [];
-                    foreach ($userData->userServices->serviceImages as $serviceImage) {
-                        $responseImage[] = $serviceImage->url;
-                    }
-                    unset($userData->userServices->serviceImages);
-                    $userData->userServices->serviceImages = $responseImage;
-                }
-            }
-            $updateResponse = $userData;
-        }
-        return $updateResponse;
-    }
+
     /**
      * Check UserName in database.
      * 
@@ -120,12 +95,10 @@ class UsersController extends Controller
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('username_not_available');
-                $data['data'] = [];
             } else {
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('username_available');
-                $data['data'] = [];
             }
         } catch (Exception $e) {
             $data['status'] = false;
@@ -150,39 +123,21 @@ class UsersController extends Controller
         $data = [];
         try {
             $validator = Validator::make($request->all(), [
-                'username' => 'required|unique:users,username',
+                // 'username' => 'required|unique:users,username',
                 'name' => 'required|min:3',
                 'email' => 'nullable|email',
                 'country_code' => 'required',
-                'phone_number' => 'required',
+                'phone_number' => 'required|unique:users,phone_number',
                 'profile_image' => 'nullable',
             ]);
             if ($validator->fails()) {
                 return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             }
-            $user = new User();
-            $user->username = $request->request->get('username', false);
-            $user->parent_id = $request->request->get('parent_id', 0);
-            $user->name = $request->request->get('name', false);
-            $user->email = $request->request->get('email', false);
-            $user->password = bcrypt('123456');
-            $user->country_code = $request->request->get('country_code', false);
-            $user->phone_number = $request->request->get('phone_number', false);
-            $user->profile_image = $request->request->get('profile_image', false);
-            $user->device_id = $request->request->get('device_id', false);
-            $user->device_type = $request->request->get('device_type', false);
-            $user->firebase_id = $request->request->get('firebase_id', false);
-            $user->firebase_email = $request->request->get('firebase_email', false);
-            $user->firebase_password = $request->request->get('firebase_password', false);
-            $user->fcm_token = $request->request->get('fcm_token', false);
-            $user->uId = $request->request->get('uId', false);
-            $user->status = 1;
-            
             $updateData = [];
-            if ($user->save()) {
+            if ($user = UserRepository::store($request)) {
                 $updateData['api_token'] = $user->createToken(env('APP_NAME'))->plainTextToken;
                 User::where('id', $user->id)->update($updateData);
-                $userData = self::getUser($user->id);
+                $userData = UserRepository::getUser($user->id);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_created');
@@ -191,7 +146,6 @@ class UsersController extends Controller
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_not_created');
-                $data['data'] = [];
             }
         } catch (\Exception $e) {
             $data['status'] = false;
@@ -205,9 +159,8 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-    
     /**
-     * create Profile.
+     * createServiceProfile.
      * 
      * @param Request $request Illuminate\Http\Request
      * @return [].
@@ -227,164 +180,19 @@ class UsersController extends Controller
             // if ($validator->fails()) {
             //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             // }
-            // $authUser = $request->get('Auth');
-            $serviceProfile = new ServiceProfile();
-            $serviceProfile->user_id = $authUserId = $request->request->get('user_id', 0);
-            $serviceProfile->category_id = $request->request->get('category_id', 0);
-            $serviceProfile->service_name = $request->request->get('service_name', '');
-            $serviceProfile->email = $request->request->get('email', '');
-            $serviceProfile->contact_person = $request->request->get('contact_person', '');
-            $serviceProfile->mobile_number = $request->request->get('mobile_number', '');
-            $serviceProfile->street_name = $request->request->get('street_name', '');
-            $serviceProfile->building_name = $request->request->get('building_name', '');
-            $serviceProfile->pin_code = $request->request->get('pin_code', '');
-            $serviceProfile->city = $request->request->get('city', '');
-            $serviceProfile->state = $request->request->get('state', '');
-            $serviceProfile->country = $request->request->get('country', '');
-            $serviceProfile->website = $request->request->get('website', '');
-            $serviceProfile->description = $request->request->get('description', '');
-            $serviceProfile->latitude = $request->request->get('latitude', '');
-            $serviceProfile->longitude = $request->request->get('longitude', '');
-            $serviceProfile->status = 1;
-            $servicesProfileImages = $request->request->get('services_profile_images') ?? [];
-            if ($serviceProfile->save()) {
-                if (!empty($servicesProfileImages)) {
-                    $ordering = 1;
-                    foreach ($servicesProfileImages as $value) {
-                        if (!empty($value)) {
-                            $attachmentData = [];
-                            $attachmentData['service_id'] = $serviceProfile->id;
-                            $attachmentData['user_id'] = $authUserId;
-                            $attachmentData['title'] = '';
-                            $attachmentData['name'] = basename($value);
-                            $attachmentData['url'] = $value;
-                            $attachmentData['ordering'] = $ordering;
-                            ServiceImages::create($attachmentData);
-                            $ordering++;
-                        }
-                    }
-                }
+            if (UserRepository::storeServiceProfile($request)) {
+                $authUserId = $request->get('Auth')->id;
+                $updateResponse = UserRepository::getUser($authUserId);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_created');
-                $data['data'] = [];
+                $data['data'] = $updateResponse;
             } else {
-                $data['status'] = true;
+                $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_not_created');
-                $data['data'] = [];
             }
         } catch (\Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
-
-
-    /**
-     * uploadDocument.
-     * 
-     * @param Request $request Illuminate\Http\Request
-     * @return [].
-     */
-    public function uploadDocument(Request $request)
-    {
-        $data = [];
-        try {
-            $validator = Validator::make($request->all(), [
-                'upload_file' => 'required',
-                'type' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            }
-            $type = $request->request->get('type', false);
-            $responseData = [];
-            if (isset($_FILES['upload_file']['name']) && $_FILES['upload_file']['name'] != '') {
-                switch ($type) {
-                    case 'profile_photo':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    case 'services_profile_images':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    case 'product_images':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    case 'post_images':
-                        $responseData[$type] = self::fileUpload($request);
-                        break;
-                    default:
-                        $responseData['no_file'] = '';
-                }
-            }
-            $data['status'] = true;
-            $data['code'] = config('response.HTTP_OK');
-            $data['message'] = ApiGlobalFunctions::messageDefault('file_upload');
-            $data['data'] = $responseData;
-        } catch (Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
-
-    /**
-     * fileUpload.
-     * 
-     * @param Request $request Illuminate\Http\Request
-     * @return [].
-     * use in ApiGlobalFunctions::uploadDocument
-     */
-    public static function fileUpload(Request $request)
-    {
-        $data = [];
-        try {
-            $path = '';
-            $type = $request->request->get('type', false);
-            $fileName = $request->file('upload_file');
-            $upload_file = time() . '.' . $fileName->getClientOriginalExtension();
-            
-            switch ($type) {
-                case 'profile_photo':
-                    $path = asset('storage/profile/');
-                    $fileName->move(storage_path('app/public/profile/'), $upload_file);
-                    break;
-                case 'services_profile_images':
-                    $path = asset('storage/services/');
-                    $fileName->move(storage_path('app/public/services/'), $upload_file);
-                    break;
-                case 'product_images':
-                    $path = asset('storage/products/');
-                    $fileName->move(storage_path('app/public/products/'), $upload_file);
-                    break;
-                case 'post_images':
-                    $path = asset('storage/posts/');
-                    $fileName->move(storage_path('app/public/posts/'), $upload_file);
-                    break;
-                default:
-                    $upload_file = '';
-                    $path = '';
-            }
-            $data['status'] = true;
-            $data['code'] = config('response.HTTP_OK');
-            $data['message'] = ApiGlobalFunctions::messageDefault('file_upload');
-            $data['data'] =  [
-                'upload_file' => $upload_file,
-                'upload_path' => $path,
-            ];
-        } catch (Exception $e) {
             $data['status'] = false;
             $data['code'] =  $e->getCode();
             if (config('constants.DEBUG_MODE')) {
@@ -415,13 +223,13 @@ class UsersController extends Controller
                 return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             }
             if ($user->id) {
-                $userId = $request->request->get('user_id', 0);
+                $userId = $request->input('user_id', 0);
                 if ($userId > 0) {
-                    $userId = $request->request->get('user_id');
+                    $userId = $request->input('user_id');
                 } else {
                     $userId = $user->id;
                 }
-                $userDetails = User::where('id', $userId)->first();
+                $userDetails = UserRepository::getUser($userId);
                 if (!empty($userDetails)) {
                     $data['status'] = true;
                     $data['code'] = config('response.HTTP_OK');
@@ -449,8 +257,8 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-       
-    
+
+
     /**
      * updateProfile
      *
@@ -459,29 +267,20 @@ class UsersController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $data = [];
-        $user = $request->get('Auth');
+        $data = $update = [];
         try {
-            $validator = (object) Validator::make($request->all(), [
-            ]);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            }
-            $dob = $request->request->get('dob', false);
-            $update['name'] = $request->request->get('name', false);
-            $update['bio'] = $request->request->get('bio', false);
-            $update['website'] = $request->request->get('website', false);
-            $update['dob'] = date('Y-m-d', $dob);
-            $update['janam_din'] = $dob;
-            $update['cover_image'] = $request->request->get('cover_image', false);
-            $update['profile_image'] = $request->request->get('profile_image', false);
-           
-            if(User::where('id', $user->id)->update($update)) {
-                $userDeatils = User::where('id', $user->id)->first();
+            // $validator = (object) Validator::make($request->all(), [
+            // ]);
+            // if ($validator->fails()) {
+            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            // }
+            $authUser = $request->get('Auth');
+            if (UserRepository::updateProfile($request)) {
+                $userDetails = UserRepository::getUser($authUser->id);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_edit');
-                $data['data'] = $userDeatils;
+                $data['data'] = $userDetails;
             } else {
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
@@ -499,375 +298,198 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-
-    public function login(Request $request)
+    /**
+     * updateServiceProfile.
+     * 
+     * @param Request $request Illuminate\Http\Request
+     * @return [].
+     */
+    public function updateServiceProfile(Request $request)
     {
+        $data = $update = [];
+        try {
+            // $validator = Validator::make($request->all(), [
+            //     'username' => 'required|unique:users,username',
+            //     'name' => 'required|min:3',
+            //     'email' => 'nullable|email',
+            //     'country_code' => 'required',
+            //     'phone_number' => 'required',
+            //     'profile_image' => 'nullable',
+            // ]);
+            // if ($validator->fails()) {
+            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            // }
+            if (UserRepository::updateServiceProfile($request)) {
+                $authUser = $request->get('Auth');
+                $userDetails = UserRepository::getUser($authUser->id);
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('profile_edit');
+                $data['data'] = $userDetails;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('invalid_request');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
 
-        $input = $request->all();
+    /**
+     * checkReferralCode.
+     * 
+     * @param Request $request Illuminate\Http\Request
+     * @return [].
+     */
+    public function checkReferralCode(Request $request)
+    {
+        $data = $responseData = [];
+        try {
+            $validator = (object) Validator::make($request->all(), [
+                'referral_code' => 'nullable',
+            ]);
+            if ($validator->fails()) {
+                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            }
+            if ($referralProfile = UserRepository::checkReferralCode($request)) {
+                $responseData['name'] = $referralProfile->user->name;
+                $responseData['referral_code'] = $referralProfile->referral_code;
+                $responseData['referral_code_expire'] = false;
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('payment_request');
+                $data['data'] = $responseData;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('referral_code_notActive');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /* Get Service Profiles.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return []
+     */
+    public function getServiceProfiles(Request $request)
+    {
+        $data = [];
+        $user = $request->get('Auth');
+        try {
+            $serviceResponse = UserRepository::listServiceProfile($request);
+            if (!empty($serviceResponse)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = $serviceResponse;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /* Get User Level.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return []
+     */
+    public function getUserLevel(Request $request)
+    {
         $data = [];
         try {
-            $validator = Validator::make($input, ['email' => 'required', 'password' => 'required', 'device_type' => 'required']);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->errors()->first(), '200');
+            $authUser = $request->get('Auth');
+            $userId = $authUser->id;
+            if ($request->input('user_id', false)) {
+                $userId = $request->input('user_id', false);
+            }
+            $level = ReferralSystem::getCurrentLevel($userId);
+            $sponsorsDetail = SponsorRepository::getSponsors($userId);
+            if ($level) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = [
+                    'level' => $level,
+                    'sponsorsDetail' => $sponsorsDetail,
+                ];
             } else {
-                $query = User::query();
-                $email_exist = $query->where('email', request('email'))->count();
-                if ($email_exist == 0) {
-                    return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('invalid_login'), '', '200');
-                } elseif (Auth::attempt(['email' => request('email'), 'password' => request('password')])) {
-                    $user = Auth::user();
-                    if (!$user->status) {
-                        return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('not_active') . 'support for assistance.', '', '200');
-                    } elseif (!$user->email_verified_at) {
-                        return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('not_verified'), '', '200');
-                    } else {
-                        $input = $request->all();
-                        $data = $user;
-                        $data['device_id'] = isset($input['device_id']) ? str_replace('"', '', $input['device_id']) : $data['device_id'];
-                        $data['device_type'] = isset($input['device_type']) ? $input['device_type'] : $data['device_type'];
-                        $data['api_token'] = $user->createToken('Laravel')->plainTextToken;
-                        User::where('id', $user->id)->update(['api_token' => $data['api_token'], 'device_id' => $data['device_id'], 'device_type' => $data['device_type']]);
-                        $userData = User::where('id', $user->id)->first();
-                        return ApiGlobalFunctions::sendResponse($userData, ApiGlobalFunctions::messageDefault('login_success'));
-                    }
-                } else {
-                    return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('invalid_login'), '', '200');
-                }
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
             }
         } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'), '', '200');
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
         }
+        return ApiGlobalFunctions::responseBuilder($data);
     }
 
-
-    public function forgotPassword(Request $request)
+    public function updateFcmUpdate(Request $request)
     {
-        $input = $request->all();
+        $data = $update = [];
         try {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required',
-            ], [
-
-                'email.required' => 'Please provide email id.',
-
-            ]);
-            if ($validator->fails()) {
-
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->errors()->first(), '200');
-            }
-            $query = User::where(['email' => $request->email]);
-            if ($query->exists()) {
-                $user = $query->first();
-                if (!$user->status) {
-                    return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('not_activated'), '', '200');
-                } elseif (!$user->email_verified_at) {
-                    return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('not_verified'), '', '200');
-                }
-                $code = rand(111111, 999999);
-                $result = User::where('id', $user->id)->update(['verification_code' => $code]);
-                $hook = "forgot-password-verification-code";
-                $replacement['RESET_CODE'] = $code;
-                $data = ['template' => $hook, 'hooksVars' => $replacement];
-                Mail::to($user->email)->send(new \App\Mail\ManuMailer($data));
-                $data = (object) [];
-                return ApiGlobalFunctions::sendResponse($data, ApiGlobalFunctions::messageDefault('Your reset password code has been sent to your registered email.'));
+            // $validator = Validator::make($request->all(), [
+            //     'fcm' => 'required',
+            // ]);
+            // if ($validator->fails()) {
+            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            // }
+            if (UserRepository::updateFcmUpdate($request)) {
+                $authUser = $request->get('Auth');
+                $userDetails = UserRepository::getUser($authUser->id);
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('profile_edit');
+                $data['data'] = $userDetails;
             } else {
-
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('This email address is not registered with us.'), '', '200');
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('invalid_request');
             }
         } catch (\Exception $e) {
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'), '', '200');
-        }
-    }
-
-    public function resetPassword(Request $request)
-    {
-        $input = $request->all();
-        try {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required',
-                'password' => 'required',
-                'verification_code' => 'required',
-            ], [
-                'email.required' => 'Please provide email id.',
-                'password.required' => 'Please provide email id.',
-                'verification_code.required' => 'Please provide verification code.',
-
-            ]);
-
-            if ($validator->fails()) {
-
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->errors()->first(), '200');
-            }
-
-            $query = User::where(['email' => $request->email, 'verification_code' => $request->verification_code]);
-
-            if ($query->exists()) {
-
-                $user = $query->first();
-
-                // Check if user is active
-
-                if (!$user->status) {
-
-                    return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('not_activated'), '', '200');
-                } elseif (!$user->email_verified_at) {
-
-                    return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('not_verified'), '', '200');
-                }
-
-                $password = bcrypt($request->password);
-
-                $result = User::where('id', $user->id)->update(['password' => $password]);
-
-                $data = (object) [];
-
-                return ApiGlobalFunctions::sendResponse($data, ApiGlobalFunctions::messageDefault('Your Password Changed Successfully.'));
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
             } else {
-
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('This code not valid'), '', '200');
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
             }
-        } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'), '', '200');
         }
-    }
-
-    public function changePassword(Request $request)
-    {
-
-        $input = $request->all();
-
-        $user = $request->get('Auth');
-
-        $validator = Validator::make($request->all(), [
-
-            'old_password' => 'required',
-
-            'new_password' => 'required|min:6',
-
-        ], [
-
-            'old_password.required' => 'Please provide your old password.',
-
-            'new_password.required' => 'Please provide your new password.',
-
-            'new_password.min' => 'Password length should be more than 6 character.',
-
-        ]);
-
-        if ($validator->fails()) {
-
-            return ApiGlobalFunctions::sendError('Validation Error.', $validator->errors()->first(), '200');
-        }
-
-        try {
-
-            $user = User::find($user->id);
-
-            $old_password = $user->password;
-
-            $user->password = bcrypt($request->new_password);
-
-            $data = (object) [];
-
-            if (strcmp($request->old_password, $request->new_password) == 0) {
-
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('New password cannot be same as your current password.'), '', '200');
-            } elseif (!Hash::check($request->old_password, $old_password)) {
-
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('The current password is incorrect.'), '', '200');
-            } elseif ($user->save()) {
-
-                return ApiGlobalFunctions::sendResponse($data, ApiGlobalFunctions::messageDefault('change_password_success'));
-            } else {
-
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('process_failed'), '', '200');
-            }
-        } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'));
-        }
-    }
-
-    public function homeList(Request $request)
-    {
-        $color_codes = config('constants.CATEGORE_COLOR_CODE');
-        $data = $request->all();
-        $user = $request->get('Auth');
-        try {
-            $adsCategory = Category::where('status', 1)->where('parent_id', '0')->get(['id', 'title', 'slug', 'icon', 'color']);
-            $adsCategory->each(function ($record) use ($color_codes) {
-                $record->color = $color_codes[$record->color];
-            });
-            if (count($adsCategory) > 0) {
-                $result = [];
-                $adsQuery = Advertisement::with('user')->where('is_featured', 1)->where('is_publish', 1)->where('status', 1)
-                    ->with([
-                        'advertisement_images',
-                        'location' => function ($q) {
-                            $q->select('id', 'title', 'area_id');
-                        },
-                        'location.area' => function ($q) {
-                            $q->select('id', 'title', 'city_id');
-                        },
-                        'city' => function ($q) {
-                            $q->select('id', 'title');
-                        },
-                        'area' => function ($q) {
-                            $q->select('id', 'title', 'city_id');
-                        },
-                        'location.area.city' => function ($q) {
-                            $q->select('id', 'title');
-                        },
-                        'location.area.city' => function ($q) {
-                            $q->select('id', 'title');
-                        },
-                        'sub_business_category' => function ($q) {
-                            $q->select('id', 'title', 'parent_id');
-                        },
-                        'sub_business_category.parent' => function ($q) {
-                            $q->select('id', 'title');
-                        },
-                    ]);
-                $advertisements = $adsQuery->get();
-
-                $adsArr = array();
-                foreach ($advertisements as $key => $ad) {
-                    $user_wishlist = UserWishlist::where(['advertisement_id' => $ad->id, 'user_id' => $user->id])->count();
-                    if ($user_wishlist > 0) {
-                        $is_wishlisted = 1;
-                    } else {
-                        $is_wishlisted = 0;
-                    }
-                    $advertisements[$key]['is_wishlisted'] = $is_wishlisted;
-                }
-
-                $result['adsCategory'] = $adsCategory;
-                $result['featured_ads'] = $advertisements;
-                return ApiGlobalFunctions::sendResponse($result, ApiGlobalFunctions::messageDefault('list found successfully.'));
-            } else {
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('list not found.'), '', '200');
-            }
-        } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'), '', '200');
-        }
-    }
-
-    public function config(Request $request)
-    {
-        $data = $request->all();
-        try {
-            $city = City::where('status', 1)->get();
-            if (count($city) > 0) {
-                $area = Area::where('status', 1)->get();
-                $result['city'] = $city;
-                $result['area'] = $area;
-                return ApiGlobalFunctions::sendResponse($result, ApiGlobalFunctions::messageDefault('list found successfully.'));
-            } else {
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('list not found.'), '', '200');
-            }
-        } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'), '', '200');
-        }
-    }
-
- 
-
-    public function categoryList(Request $request)
-    {
-        $data = $request->all();
-        $user = $request->get('Auth');
-        try {
-            $subCategory = Subscription::where('user_id', $user->id)->where('start_date', '<=', Carbon::now())->where('end_date', '>=', Carbon::now())->pluck('category_id');
-
-            if (count($subCategory) > 0) {
-                $categoryList = Category::where('status', 1)->whereIn('id', $subCategory)->get(['id', 'title', 'slug', 'icon']);
-                return ApiGlobalFunctions::sendResponse($categoryList, ApiGlobalFunctions::messageDefault('list found successfully.'));
-            } else {
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('list not found.'), '', '200');
-            }
-        } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'), '', '200');
-        }
-    }
-
-    /* submitting contact us form request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return contactResponse
-     */
-    public function contactUs(Request $request)
-    {
-        $inputs = $request->all();
-        $user = $request->get('Auth');
-        try {
-            //validate the input data in api
-            $validator = Validator::make($request->all(), [
-                'name' => 'required',
-                'email' => 'required',
-                'message' => 'required',
-                'subject' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->errors()->first(), '200');
-            }
-            $insertInput = array();
-            $insertInput["name"] = $inputs['name'];
-            $insertInput["email"] = $inputs['email'];
-            $insertInput["subject"] = $inputs['subject'];
-            $insertInput["message"] = $inputs['message'];
-            $enquiryData = new Contact();
-
-            if ($enquiryData->fill($insertInput)->save()) {
-                $contactData = array();
-                $contactData['name'] = $enquiryData->name;
-                $contactData['email'] = $enquiryData->email;
-                $contactData['subject'] = $enquiryData->subject;
-                $contactData['message'] = $enquiryData->message;
-
-                return ApiGlobalFunctions::sendResponse($contactData, ApiGlobalFunctions::messageDefault('Your enquiry has been submitted successfully.'));
-            } else {
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('Your enquiry has not submitted successfully.'), '', '200');
-            }
-        } catch (\Exception $e) {
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('oops'), '', '200');
-        }
-    }
-
-    /* Event notification list.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return notificationList
-     */
-    public function notificationList(Request $request)
-    {
-        $data = $request->all();
-        $user = $request->get('Auth');
-        try {
-            $notification = EventNotification::with(['getAdsInfo.advertisement_images' => function ($q) {
-                $q->where('main', 1);
-            }])->where('receiver_id', $user->id)->orderByDesc('id')->get();
-            if (!empty($notification)) {
-                $result['notificationList'] = $notification;
-                $result['first_name'] = $user->first_name;
-                // $result['last_name'] = $user->last_name; 
-                $result['last_name'] = isset($user->last_name) ? $user->last_name : "";
-                $result['email'] = $user->email;
-                $result['phone'] = $user->phone;
-
-                return ApiGlobalFunctions::sendResponse($result, ApiGlobalFunctions::messageDefault('list found successfully.'));
-            } else {
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('list not found.'), '', '200');
-            }
-        } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError($e->getMessage());
-        }
+        return ApiGlobalFunctions::responseBuilder($data);
     }
 
     /* Internal Messaging list.

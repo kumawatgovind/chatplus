@@ -31,10 +31,39 @@ class UsersController extends Controller
     public function index(Request $request)
     {
         $users = User::sortable(['created_at' => 'desc'])
-        ->filter($request->query('keyword'))
-        ->paginate(config('get.ADMIN_PAGE_LIMIT'));
-        
+            ->filter($request->query('keyword'))
+            ->paginate(config('get.ADMIN_PAGE_LIMIT'));
+
         return view('Admin.users.index', compact('users'));
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function blockedUsers(Request $request)
+    {
+        $users = User::block()->sortable(['created_at' => 'desc'])
+            ->filter($request->query('keyword'))
+            ->paginate(config('get.ADMIN_PAGE_LIMIT'));
+
+        return view('Admin.users.blocked', compact('users'));
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function reportedUsers(Request $request)
+    {
+        $users = User::has('reportedUser')
+            ->with(['reportedUser', 'reportedUser.userByReport'])
+            ->sortable(['created_at' => 'desc'])
+            ->filter($request->query('keyword'))
+            ->paginate(config('get.ADMIN_PAGE_LIMIT'));
+        return view('Admin.users.reported', compact('users'));
     }
 
     /**
@@ -44,7 +73,7 @@ class UsersController extends Controller
      */
     public function create()
     {
-        
+
         return view('Admin.users.createOrUpdate');
     }
 
@@ -56,8 +85,6 @@ class UsersController extends Controller
      */
     public function store(UserRequest $request)
     {
-        
-        
     }
 
     /**
@@ -70,6 +97,21 @@ class UsersController extends Controller
     public function show(User $user)
     {
         return view('Admin.users.show', compact('user'));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+
+    public function reportDetail($userId)
+    {
+        $user = User::with(['reportedUser', 'reportedUser.userByReport'])
+            ->where('id', $userId)
+            ->first();
+        return view('Admin.users.report_detail', compact('user'));
     }
 
     /**
@@ -131,7 +173,7 @@ class UsersController extends Controller
             }
             $user->delete();
             DB::commit();
-            $responce = ['status' => true, 'message' => 'This '.Str::ucfirst($type).' has been deleted successfully.', 'data' => $user];
+            $responce = ['status' => true, 'message' => 'This ' . Str::ucfirst($type) . ' has been deleted successfully.', 'data' => $user];
         } catch (\Exception $e) {
             DB::rollBack();
             $responce = ['status' => false, 'message' => $e->getMessage()];
@@ -149,7 +191,7 @@ class UsersController extends Controller
         DB::beginTransaction();
         try {
             $userData = User::where(['id' => $id, 'is_approved' => 2])->first();
-            if(!empty($userData)){
+            if (!empty($userData)) {
                 $message = 'approved';
                 $userData->is_approved = 1;
                 $userData->save();
@@ -157,7 +199,7 @@ class UsersController extends Controller
             $userData->sendApprovedEnail($userData);
             $type = 'advertisers';
             DB::commit();
-            $responce = ['status' => true, 'message' => 'This '.$type.' has been '.$message.' successfully.', 'data' => []];
+            $responce = ['status' => true, 'message' => 'This ' . $type . ' has been ' . $message . ' successfully.', 'data' => []];
         } catch (\Exception $e) {
             DB::rollBack();
             $responce = ['status' => false, 'message' => $e->getMessage()];

@@ -45,7 +45,8 @@ class Category extends Model
      */
     public function getIconUrlAttribute()
     {
-        return asset('storage/category/'.$this->icon);
+        $icon = ($this->icon) ? $this->icon : 'no-image-icon.png';
+        return asset('storage/category/'.$icon);
         // return !empty($this->profile_image) ? $this->profile_image : "";
     } 
       
@@ -69,15 +70,25 @@ class Category extends Model
         return $this->hasMany(self::class, 'parent_id', 'id');
      }     
      /**
-      * users
+      * serviceProfile
       *
       * @return void
       */
-     public function users()
-    {
-        return $this->belongsToMany(\App\Models\User::class,'category_users','category_id','user_id');
-    }
- 
+      public function serviceProfile()
+      {
+         return $this->hasMany(\App\Models\ServiceProfile::class, 'category_id', 'id');
+      }  
+
+     /**
+      * serviceProduct
+      *
+      * @return void
+      */
+      public function serviceProduct()
+      {
+         return $this->hasMany(\App\Models\ServiceProduct::class, 'category_id', 'id');
+      }  
+    
     /**
      * childrenCategory
      *

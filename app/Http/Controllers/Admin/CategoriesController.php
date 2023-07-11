@@ -47,7 +47,7 @@ class CategoriesController extends Controller
             return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
         }
 
-        $parentIds = Category::select('id', 'title', 'parent_id')->where(['status' => 1, 'parent_id' => 0])->get();
+        $parentIds = Category::select('id', 'name', 'parent_id')->where(['status' => 1, 'parent_id' => 0])->get();
         $categories = $this->makeTree($parentIds);
         return view('Admin.categories.createOrUpdate', compact('categories'));
     }
@@ -66,7 +66,7 @@ class CategoriesController extends Controller
             if (empty($requestData['parent_id'])) {
                 $requestData['parent_id'] = 0;
             }
-            
+
             Category::create($requestData);
         } catch (\Illuminate\Database\QueryException $e) {
             return back()->withError($e->getMessage())->withInput();
@@ -104,7 +104,7 @@ class CategoriesController extends Controller
             return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
         }
 
-        $parentIds = Category::select('id', 'title', 'parent_id')->where(['status' => 1, 'parent_id' => 0])->where('id', '!=', $id)->get();
+        $parentIds = Category::select('id', 'name', 'parent_id')->where(['status' => 1, 'parent_id' => 0])->where('id', '!=', $id)->get();
 
         $category = Category::findOrFail($id);
         $categories = $this->makeTree($parentIds, $category->parent_id);
@@ -128,12 +128,12 @@ class CategoriesController extends Controller
         try {
             $category = Category::findOrFail($id);
             $requestData = $request->all();
-            
+
             $requestData['status'] = (isset($requestData['status'])) ? 1 : 0;
             if (empty($requestData['parent_id'])) {
                 $requestData['parent_id'] = 0;
             }
-                   
+
             $category->fill($requestData);
             $category->save();
         } catch (\Illuminate\Database\QueryException $e) {
@@ -171,7 +171,7 @@ class CategoriesController extends Controller
         /* First Lavel */
         foreach ($categories as $category) {
             $data[$k]['id'] = $category->id;
-            $data[$k]['text'] = $category->title;
+            $data[$k]['text'] = $category->name;
             $data[$k]['prefix'] = "";
             $data[$k]['position'] = "";
             $data[$k]['selected'] = false;
@@ -187,7 +187,7 @@ class CategoriesController extends Controller
 
     function getCategoryTree($parent_id = 0, $tree_array = array())
     {
-        $categories = Category::select('id', 'title', 'parent_id')->with('children')->where('parent_id', '=', $parent_id)->orderBy('parent_id')->get();
+        $categories = Category::select('id', 'name', 'parent_id')->with('children')->where('parent_id', '=', $parent_id)->orderBy('parent_id')->get();
         foreach ($categories as $item) {
             $tree_array[] = $item;
             $tree_array = $this->getCategoryTree($item->id, $tree_array);

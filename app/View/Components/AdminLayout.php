@@ -4,7 +4,7 @@ namespace App\View\Components\layouts;
 
 use Illuminate\View\Component;
 
-class Admin extends Component
+class AdminLayout extends Component
 {
     /**
      * Create a new component instance.

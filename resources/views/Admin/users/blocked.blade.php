@@ -1,8 +1,7 @@
 @php
-$title = "Users";
+$title = "Blocked Users";
 $add = "User";
 @endphp
-{{-- @dump($qparams) --}}
 <x-layouts.admin>
   @section('title', $title)
   <!-- Content Header (User header) -->
@@ -46,14 +45,14 @@ $add = "User";
               </div>
               <div class="box-body">
 
-                {{ Form::open(['url' => route('admin.users.index'),'method' => 'get']) }}
+                {{ Form::open(['url' => route('admin.users.blocks'),'method' => 'get']) }}
                 <div class="row">
                   <div class="col-md-5 form-group">
                     {{ Form::text('keyword', app('request')->query('keyword'), ['class' => 'form-control','placeholder' => 'Keyword e.g: Name, Email, Phone number']) }}
                   </div>
                   <div class="col-md-3 form-group">
                     <button class="btn btn-success" title="Filter" type="submit"><i class="fa fa-filter"></i> Filter</button>
-                    <a href="{{ route('admin.users.index') }}" class="btn btn-warning" title="Reset"><i class="fa  fa-refresh"></i> Reset</a>
+                    <a href="{{ route('admin.users.blocks') }}" class="btn btn-warning" title="Reset"><i class="fa  fa-refresh"></i> Reset</a>
                   </div>
                 </div>
 
@@ -71,7 +70,6 @@ $add = "User";
                   <th scope="col">@sortablelink('name', 'Name', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th scope="col">@sortablelink('phone_number', 'Phone Number', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th scope="col">@sortablelink('email', 'Email', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
-                  <th>@sortablelink('status', 'Status')</th>
                   <th scope="col">@sortablelink('created_at', 'Member Since', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th scope="col" class="actions" width="10%">Action</th>
                 </tr>
@@ -88,20 +86,12 @@ $add = "User";
                   <td>{{$user->name}}</td>
                   <td>{{$user->phone_number}}</td>
                   <td>{{$user->email}}</td>
-                  <td>
-                    @if ($user->status == 1)
-                    <span class='btn1 btn-block btn-success btn-xs updateStatus text-center' data-value="1" data-column="status">Active</span>
-                    @else
-                    <span class='btn1 btn-block btn-danger btn-xs updateStatus text-center' data-value="0">In-Active</span>
-                    @endif
-                  </td>
                   <td>{{ $user->created_at->format(config('get.ADMIN_DATE_FORMAT')) }}</td>
                   <td class="actions action-btn-tab">
-                    <a href="{{ route('admin.users.show',['user' => $user->id]) }}" class="btn btn-warning btn-xs" data-toggle="tooltip" alt="View setting" title="View {{ $user->first_name }}" data-original-title="View"><i class="fa fa-fw fa-eye"></i></a>
-                    @if($canCreate)
-                    <a href="{{ route('admin.users.edit',['user' => $user->id]) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit {{ $user->first_name }}" title="Edit {{ $user->first_name }}" data-original-title="Edit"><i class="fa fa-edit"></i></a>
-                    <!-- <br> -->
-                    <a href="javascript:void(0);" class="confirmDeleteBtn btn btn-danger btn-xs" data-toggle="tooltip" alt="Delete {{ $user->first_name }}" title="Delete User" data-url="{{ route('admin.users.destroy', $user->id) }}" data-title="{{ $user->name }}"><i class="fa fa-trash"></i></a>
+                    @if ($user->is_block == 1)
+                    <span class='btn1 btn-block btn-danger btn-xs text-center'>Blocked</span>
+                    @else
+                    <span class='btn1 btn-block btn-waring btn-xs text-center'>N/A</span>
                     @endif
                   </td>
                 </tr>

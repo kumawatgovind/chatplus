@@ -17,8 +17,8 @@ class checkHeader {
      * @return mixed
      */
     public function handle($request, Closure $next) {
-     $authInformation = apache_request_headers();
-
+		return $next($request);
+        $authInformation = apache_request_headers();
         if (isset($authInformation['Version-Code']) && isset($authInformation['Device-Type']) && $authInformation['Device-Type'] == 'iOS') {
             if (!empty($authInformation['Version-Code']) && $authInformation['Version-Code'] == 1) {
                 return $next($request);
