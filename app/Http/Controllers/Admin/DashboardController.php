@@ -33,17 +33,18 @@ class DashboardController extends Controller
         $userTodayTotal = Helper::thousandsFormat(
             $userQuery->whereDate('created_at', Carbon::today())->count()
         );
+        // dd(Carbon::now()->month);
         $userWeeklyTotal = Helper::thousandsFormat(
             $userQuery->whereBetween(
                 'created_at',
-                [Carbon::now()->subWeek()->startOfWeek(), Carbon::now()->subWeek()->endOfWeek()]
+                [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]
             )->count()
         );
         $userMonthTotal = Helper::thousandsFormat(
             $userQuery->whereMonth(
                 'created_at',
                 '=',
-                Carbon::now()->subMonth()->month
+                Carbon::now()->month
             )->count()
         );
         $userTotal = Helper::thousandsFormat($userQuery->count());
@@ -53,15 +54,15 @@ class DashboardController extends Controller
         /* Subscribe Users Statics  */
         $subscriptionTodayTotal = Helper::thousandsFormat(
             $userQuery->whereHas('userSubscription', function ($q) {
-                $q->whereDate('created_at', Carbon::today());
+                $q->whereDate('created_at', Carbon::today())->where('is_active', 1);
             })->count()
         );
         $subscriptionWeeklyTotal = Helper::thousandsFormat(
             $userQuery->whereHas('userSubscription', function ($q) {
                 $q->whereBetween(
                     'created_at',
-                    [Carbon::now()->subWeek()->startOfWeek(), Carbon::now()->subWeek()->endOfWeek()]
-                );
+                    [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]
+                )->where('is_active', 1);
             })->count()
         );
         $subscriptionMonthTotal = Helper::thousandsFormat(
@@ -69,17 +70,17 @@ class DashboardController extends Controller
                 $q->whereMonth(
                     'created_at',
                     '=',
-                    Carbon::now()->subMonth()->month
-                );
+                    Carbon::now()->month
+                )->where('is_active', 1);
             })->count()
         );
         $subscriptionTotal = $subscriptionTotalAmount = Helper::thousandsFormat($userQuery->whereHas('userSubscription')->count());
         $subscriptionTotalAmount = Helper::thousandsFormat(UserSubscription::where('is_active', 1)->sum('subscription_price'));
+        
         $renewalPending  = Helper::thousandsFormat(
-            $userQuery->select('users.* ')
-                ->join('user_subscriptions', 'user_subscriptions.user_id', '=', 'users.id')
-                ->groupBy('users.id')
-                ->count()
+            $userQuery->select('users.*', 'user_subscriptions.user_id')
+            ->leftJoin('user_subscriptions', 'user_subscriptions.user_id', '=', 'users.id')
+            ->whereNull('user_subscriptions.user_id')->count()
         );
         $topSellerEarning = $userQuery->withCount([
             'userEarnings' => function ($query) {
@@ -98,14 +99,14 @@ class DashboardController extends Controller
         $adsListWeeklyTotal = Helper::thousandsFormat(
             $serviceProductQuery->whereBetween(
                 'created_at',
-                [Carbon::now()->subWeek()->startOfWeek(), Carbon::now()->subWeek()->endOfWeek()]
+                [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]
             )->count()
         );
         $adsListMonthTotal = Helper::thousandsFormat(
             $serviceProductQuery->whereMonth(
                 'created_at',
                 '=',
-                Carbon::now()->subMonth()->month
+                Carbon::now()->month
             )->count()
         );
         $adsListTotal = Helper::thousandsFormat($serviceProductQuery->count());
@@ -123,14 +124,14 @@ class DashboardController extends Controller
         $businessListWeeklyTotal = Helper::thousandsFormat(
             $serviceProfileQuery->whereBetween(
                 'created_at',
-                [Carbon::now()->subWeek()->startOfWeek(), Carbon::now()->subWeek()->endOfWeek()]
+                [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]
             )->count()
         );
         $businessListMonthTotal = Helper::thousandsFormat(
             $serviceProfileQuery->whereMonth(
                 'created_at',
                 '=',
-                Carbon::now()->subMonth()->month
+                Carbon::now()->month
             )->count()
         );
         $businessListTotal = $runningBusinessListing = Helper::thousandsFormat($serviceProfileQuery->count());
@@ -147,14 +148,14 @@ class DashboardController extends Controller
         $incomeWeeklyTotal = Helper::thousandsFormat(
             $incomeQuery->whereBetween(
                 'created_at',
-                [Carbon::now()->subWeek()->startOfWeek(), Carbon::now()->subWeek()->endOfWeek()]
+                [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]
             )->sum('admin_earning')
         );
         $incomeMonthTotal = Helper::thousandsFormat(
             $incomeQuery->whereMonth(
                 'created_at',
                 '=',
-                Carbon::now()->subMonth()->month
+                Carbon::now()->month
             )->sum('admin_earning')
         );
         $incomeTotal = Helper::thousandsFormat($incomeQuery->sum('admin_earning'));

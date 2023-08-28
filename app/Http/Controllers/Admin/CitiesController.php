@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\CityRequest;
 use App\Models\City;
-use App\Models\Advertisement;
-use Gate, DB;
+use App\Models\State;
+use App\Models\ServiceProduct;
+use App\Helpers\Helper;
+use Validator, Gate, DB;
 
 
 class CitiesController extends Controller
@@ -19,11 +21,10 @@ class CitiesController extends Controller
      */
     public function index(Request $request)
     {
-        $response = Gate::inspect('check-user', "locations-index");
-        if (!$response->allowed()) {
-            return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
-        }
-        $cities = City::sortable(['created_at' => 'desc'])->with('country')->filter($request->query('keyword'))->paginate(config('get.ADMIN_PAGE_LIMIT'));
+        $cities = City::sortable(['created_at' => 'desc'])
+        ->with('state')->filter($request->query('keyword'))
+        ->paginate(config('get.ADMIN_PAGE_LIMIT'));
+
         return view('Admin.cities.index', compact('cities'));
     }
 
@@ -34,12 +35,8 @@ class CitiesController extends Controller
      */
     public function create()
     {
-        $response = Gate::inspect('check-user', "locations-create");
-        if (!$response->allowed()) {
-            return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
-        }
-
-        return view('Admin.cities.createOrUpdate');
+        $states = State::pluck('name', 'id')->toArray();
+        return view('Admin.cities.createOrUpdate', compact('states'));
     }
 
     /**
@@ -50,14 +47,9 @@ class CitiesController extends Controller
      */
     public function store(CityRequest $request)
     {
-        $response = Gate::inspect('check-user', "locations-create");
-        if (!$response->allowed()) {
-            return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
-        }
         try {
             $requestData = $request->all();
             $requestData['status'] = (isset($requestData['status'])) ? 1 : 0;
-            $requestData['country_id'] = config('constants.DEFAULT_COUNTRY');
             City::create($requestData);
         } catch (\Illuminate\Database\QueryException $e) {
             return back()->withError($e->getMessage())->withInput();
@@ -83,6 +75,18 @@ class CitiesController extends Controller
     }
 
     /**
+     * List of city from state id.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function getCityByStateId($stateId = 0)
+    {
+        $cities = City::where('state_id', $stateId)->pluck('name', 'id')->toArray();
+        dd($cities);
+    }
+
+    /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
@@ -90,22 +94,12 @@ class CitiesController extends Controller
      */
     public function edit($id)
     {
-        $response = Gate::inspect('check-user', "locations-create");
-        if (!$response->allowed()) {
-            return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
-        }
         $city = City::findOrFail($id);
-
-        return view('Admin.cities.createOrUpdate', compact('city'));
+        $states = State::pluck('name', 'id')->toArray();
+        return view('Admin.cities.createOrUpdate', compact('city', 'states'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+  
     /**
      * Update the specified resource in storage.
      * @param  Request $request
@@ -114,15 +108,10 @@ class CitiesController extends Controller
     public function update(CityRequest $request, $id)
     {
 
-        $response = Gate::inspect('check-user', "locations-create");
-        if (!$response->allowed()) {
-            return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
-        }
         try {
             $city = City::findOrFail($id);
             $requestData = $request->all();
             $requestData['status'] = (isset($requestData['status'])) ? 1 : 0;
-            $requestData['country_id'] = config('constants.DEFAULT_COUNTRY');
             $city->fill($requestData);
             $city->save();
         } catch (\Illuminate\Database\QueryException $e) {
@@ -139,32 +128,72 @@ class CitiesController extends Controller
      */
     public function destroy($id)
     {
-
-        $response = Gate::inspect('check-user', "locations-create");
-        if (!$response->allowed()) {
-            // return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
-            $responce = ['status' => false, 'message' => $response->message()];
-        } else {
-            DB::beginTransaction();
-            try {
-                $city = City::findOrFail($id);
-                $adsQuery = Advertisement::query();
-                if (!empty($city)) {
-                    $adsQuery->where('city_id', $city->id);
-                }
-                $adsCount = $adsQuery->count();
-                if ($adsCount) {
-                    $responce = ['status' => false, 'message' => "Business category not able to delete due to some associated data."];
+        $response = [];
+        DB::beginTransaction();
+        try {
+            $city = City::findOrFail($id);
+            $adsQuery = ServiceProduct::query();
+            if (!empty($city)) {
+                $locality = Locality::where('city_id', $state->id);
+                $adsQuery->where('city_id', $city->id);
+                if ($adsQuery->count() > 0 || $locality->count() > 0) {
+                    $response = ['status' => false, 'message' => "City not able to delete due to some associated data."];
                 } else {
                     $city->delete();
                     DB::commit();
-                    $responce = ['status' => true, 'message' => 'This city has been deleted successfully.', 'data' => ['id' => $id]];
+                    $response = ['status' => true, 'message' => 'This city has been deleted successfully.', 'data' => ''];
                 }
-            } catch (\Exception $e) {
-                DB::rollBack();
-                $responce = ['status' => false, 'message' => $e->getMessage()];
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $response = ['status' => false, 'message' => $e->getMessage()];
+        }
+        return $response;
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function importView()
+    {
+        $states = State::pluck('name', 'id')->toArray();
+        return view('Admin.cities.import', compact('states'));
+    }
+    
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function import(Request $request)
+    {
+        $validated = $request->validate([
+            'state_id' => 'required',
+        ]); 
+        $stateId = $request->input('state_id', 0);
+        $targetPath = $request->file('import')->store('files');
+        $sPath = storage_path('app');
+        $filePath = $sPath.'/'.$targetPath;
+        $importData = Helper::getXlsxData($filePath);
+        $requestData = [];
+        foreach ($importData as $data) {
+            $cityName = $data[0];
+            if ($cityName) {
+                $cityData = City::where([
+                    'name' => $cityName,
+                    'state_id' => $stateId
+                    ])->first();
+                if (empty($cityData)) {
+                    $requestData['status'] = 1;
+                    $requestData['state_id'] = $stateId;
+                    $requestData['name'] = $cityName;
+                    City::create($requestData);
+                }
             }
         }
-        return $responce;
+        unlink(storage_path('app/'.$targetPath));
+        return redirect()->route('admin.cities.index')->with('success', 'All city has been imported successfully');
     }
 }

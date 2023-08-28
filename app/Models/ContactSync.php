@@ -4,16 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Kyslik\ColumnSortable\Sortable;
 
 class ContactSync extends Model
 {
-    use HasFactory;    
+    use HasFactory, Sortable;
     /**
      * table
      *
      * @var string
      */
-    protected $table = 'contact_sync';    
+    protected $table = 'contact_sync';
     /**
      * fillable
      *
@@ -26,7 +27,9 @@ class ContactSync extends Model
         'name',
         'number'
     ];
-    
+
+    public $sortable = ['created_at', 'updated_at'];
+
     /**
      * users
      *
@@ -34,8 +37,6 @@ class ContactSync extends Model
      */
     public function users()
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
-
-    
 }

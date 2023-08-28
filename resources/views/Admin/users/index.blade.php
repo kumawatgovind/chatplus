@@ -72,6 +72,7 @@ $add = "User";
                   <th scope="col">@sortablelink('phone_number', 'Phone Number', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th scope="col">@sortablelink('email', 'Email', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th>@sortablelink('status', 'Status')</th>
+                  <th>@sortablelink('is_block', 'Is Block')</th>
                   <th scope="col">@sortablelink('created_at', 'Member Since', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th scope="col" class="actions" width="10%">Action</th>
                 </tr>
@@ -95,13 +96,20 @@ $add = "User";
                     <span class='btn1 btn-block btn-danger btn-xs updateStatus text-center' data-value="0">In-Active</span>
                     @endif
                   </td>
+                  <td>
+                    @if ($user->is_block == 1)
+                    <span class='btn1 btn-block btn-danger btn-xs updateStatus text-center' data-value="1" data-column="status">Blocked</span>
+                    @else
+                    <span class='btn1 btn-block btn-success btn-xs updateStatus text-center' data-value="0">Active</span>
+                    @endif
+                  </td>
                   <td>{{ $user->created_at->format(config('get.ADMIN_DATE_FORMAT')) }}</td>
                   <td class="actions action-btn-tab">
                     <a href="{{ route('admin.users.show',['user' => $user->id]) }}" class="btn btn-warning btn-xs" data-toggle="tooltip" alt="View setting" title="View {{ $user->first_name }}" data-original-title="View"><i class="fa fa-fw fa-eye"></i></a>
                     @if($canCreate)
                     <a href="{{ route('admin.users.edit',['user' => $user->id]) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit {{ $user->first_name }}" title="Edit {{ $user->first_name }}" data-original-title="Edit"><i class="fa fa-edit"></i></a>
                     <!-- <br> -->
-                    <a href="javascript:void(0);" class="confirmDeleteBtn btn btn-danger btn-xs" data-toggle="tooltip" alt="Delete {{ $user->first_name }}" title="Delete User" data-url="{{ route('admin.users.destroy', $user->id) }}" data-title="{{ $user->name }}"><i class="fa fa-trash"></i></a>
+                    <!-- <a href="javascript:void(0);" class="confirmDeleteBtn btn btn-danger btn-xs" data-toggle="tooltip" alt="Delete {{ $user->first_name }}" title="Delete User" data-url="{{ route('admin.users.destroy', $user->id) }}" data-title="{{ $user->name }}"><i class="fa fa-trash"></i></a> -->
                     @endif
                   </td>
                 </tr>

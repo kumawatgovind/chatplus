@@ -9,6 +9,7 @@ use App\Traits\ApiGlobalFunctions;
 use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Models\User;
+use App\Models\Sponsor;
 use App\Repositories\SponsorRepository;
 use App\Repositories\UserRepository;
 use Carbon\Carbon;
@@ -41,17 +42,23 @@ class UsersController extends Controller
                 'phone_number' => $phoneNumber,
                 'status' => 1
             ])->first();
-            if (!empty($verifiedMobile)) {
-                $updateData = [];
-                $updateData['device_id'] = isset($request->device_id) ? str_replace('"', '', $request->device_id) : "";
-                $updateData['device_type'] = isset($request->device_type) ? $request->device_type : "";
-                $updateData['api_token'] = $verifiedMobile->createToken(env('APP_NAME'))->plainTextToken;
-                User::where('id', $verifiedMobile->id)->update($updateData);
-                $updateResponse = UserRepository::getUser($verifiedMobile->id);
-                $data['status'] = true;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('mobile_verified');
-                $data['data'] = $updateResponse;
+            if ($verifiedMobile) {
+                if ($verifiedMobile->is_block) {
+                    $data['status'] = false;
+                    $data['code'] = config('response.HTTP_OK');
+                    $data['message'] = ApiGlobalFunctions::messageDefault('block_by_admin');
+                } else {
+                    $updateData = [];
+                    $updateData['device_id'] = isset($request->device_id) ? str_replace('"', '', $request->device_id) : "";
+                    $updateData['device_type'] = isset($request->device_type) ? $request->device_type : "";
+                    $updateData['api_token'] = $verifiedMobile->createToken(env('APP_NAME'))->plainTextToken;
+                    User::where('id', $verifiedMobile->id)->update($updateData);
+                    $updateResponse = UserRepository::getUser($verifiedMobile->id);
+                    $data['status'] = true;
+                    $data['code'] = config('response.HTTP_OK');
+                    $data['message'] = ApiGlobalFunctions::messageDefault('mobile_verified');
+                    $data['data'] = $updateResponse;
+                }
             } else {
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
@@ -99,6 +106,7 @@ class UsersController extends Controller
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('username_available');
+                $data['data'] = $checkUserName;
             }
         } catch (Exception $e) {
             $data['status'] = false;
@@ -143,7 +151,7 @@ class UsersController extends Controller
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_created');
                 $data['data'] = $userData;
             } else {
-                $data['status'] = true;
+                $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('profile_not_created');
             }
@@ -360,7 +368,7 @@ class UsersController extends Controller
                 return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             }
             if ($referralProfile = UserRepository::checkReferralCode($request)) {
-                $responseData['name'] = $referralProfile->user->name;
+                $responseData['name'] = $referralProfile->name;
                 $responseData['referral_code'] = $referralProfile->referral_code;
                 $responseData['referral_code_expire'] = false;
                 $data['status'] = true;
@@ -417,47 +425,13 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-    /* Get User Level.
+    
+    /**
+     * updateFcmUpdate
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return []
+     * @param  mixed $request
+     * @return void
      */
-    public function getUserLevel(Request $request)
-    {
-        $data = [];
-        try {
-            $authUser = $request->get('Auth');
-            $userId = $authUser->id;
-            if ($request->input('user_id', false)) {
-                $userId = $request->input('user_id', false);
-            }
-            $level = ReferralSystem::getCurrentLevel($userId);
-            $sponsorsDetail = SponsorRepository::getSponsors($userId);
-            if ($level) {
-                $data['status'] = true;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
-                $data['data'] = [
-                    'level' => $level,
-                    'sponsorsDetail' => $sponsorsDetail,
-                ];
-            } else {
-                $data['status'] = false;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
-            }
-        } catch (\Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
-
     public function updateFcmUpdate(Request $request)
     {
         $data = $update = [];
@@ -492,65 +466,192 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-    /* Internal Messaging list.
+
+    /* Get User Level.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return internalMessagingList
+     * @return []
      */
-    public function internalMessagingList(Request $request)
+    public function getUserLevel(Request $request)
     {
-        $user = $request->get('Auth');
-
+        $data = [];
         try {
-            $discussion = Discussion::with(
-                [
-                    'discussionMsg',
-                    'advertisement:id,title,slug,user_id',
-                    'sender:id,first_name,profile_picture,last_name',
-                    'receiver:id,first_name,profile_picture,last_name',
-                ]
-            )
-                ->distinct('advertisement_id')
-                ->orWhere(['receiver_id' => $user->id, 'sender_id' => $user->id])
-                ->orderBy('created_at', 'DESC')->get();
-
-            if ($discussion && count($discussion) > 0) {
-                foreach ($discussion as $key => $discussionMsg) {
-                    // dd($discussionMsg->sender->last_name);
-                    $discussion[$key]['lastMessage'] = $discussionMsg->discussionMsg()->orderBy('created_at', 'DESC')->first();
-                    //  dd($discussionMsg->receiver->last_name);
-                    //   ======================== Last send check if null then send empty ============================
-                    if (isset($discussionMsg->receiver->last_name) == null) {
-                        $discussionMsg->receiver->last_name = "";
-                    }
-                    if (($discussionMsg->sender->last_name) == null) {
-                        $discussionMsg->sender->last_name = "";
-                    }
-                    //   ======================== close Last send check if null then send empty ============================
-
-                    if ($user->id == $discussionMsg->receiver->id) {
-                        $discussion[$key]['imageSenderpath'] = !empty($discussionMsg->sender->profile_picture) ? asset('storage/profile_pictures/' . $discussionMsg->sender->profile_picture) : asset('img/no-image.png');
-                    } else {
-                        $discussion[$key]['imageSenderpath'] = !empty($discussionMsg->receiver->profile_picture) ? asset('storage/profile_pictures/' . $discussionMsg->receiver->profile_picture) : asset('img/no-image.png');
-                    }
-                }
+            $authUser = $request->get('Auth');
+            $userId = $authUser->id;
+            if ($request->input('user_id', false)) {
+                $userId = $request->input('user_id', false);
             }
-
-            if (!empty($discussion)) {
-                return ApiGlobalFunctions::sendResponse($discussion, ApiGlobalFunctions::messageDefault('list found successfully.'));
+            $sponsorUser = Sponsor::where('sponsored_user_id', $userId)->select('sponsor_user_id')->first();
+            
+            if ($sponsorUser) {
+                $level = ReferralSystem::getCheckCurrentLevel($userId);
             } else {
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('list not found.'), '', '200');
+                $level = 'N/A';
             }
-
-            if (!empty($discussion)) {
-                return ApiGlobalFunctions::sendResponse($discussion, ApiGlobalFunctions::messageDefault('list found successfully.'));
+            $sponsorsDetail = SponsorRepository::getSponsors($userId);
+            if ($level) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = [
+                    'level' => $level,
+                    'sponsorsDetail' => $sponsorsDetail,
+                ];
             } else {
-                return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('list not found.'), '', '200');
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
             }
         } catch (\Exception $e) {
-
-            return ApiGlobalFunctions::sendError($e->getMessage());
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
         }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /* myReferrals.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return []
+     */
+    public function myReferrals(Request $request)
+    {
+        $data = [];
+        try {
+            $authUser = $request->get('Auth');
+            $userId = $authUser->id;
+            if ($request->input('user_id', false)) {
+                $userId = $request->input('user_id', false);
+            }
+            $sponsorsDetail = SponsorRepository::getMySponsors($request);
+            if (true) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = $sponsorsDetail;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /* sponsorsHistory.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return []
+     */
+    public function sponsorsHistory(Request $request)
+    {
+        $data = [];
+        try {
+            $sponsorsDetail = SponsorRepository::getSponsorsHistory($request);
+            if (true) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = $sponsorsDetail;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /* transactionHistory.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return []
+     */
+    public function transactionHistory(Request $request)
+    {
+        $data = [];
+        try {
+            $sponsorsDetail = SponsorRepository::getTransactionHistory($request);
+            extract($sponsorsDetail);
+            if ($statusTransaction) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = $dataTransaction;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    
+    /**
+     * spamReported
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public function spamReported(Request $request)
+    {
+        $data = $update = [];
+        try {
+            // $validator = Validator::make($request->all(), [
+            //     'reported_for' => 'required',
+            // ]);
+            // if ($validator->fails()) {
+            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            // }
+            if (UserRepository::spamReported($request)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('save_records');
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('invalid_request');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
     }
 
     /* Message Conversation list.
@@ -766,8 +867,12 @@ class UsersController extends Controller
     public function logout(Request $request)
     {
         $user = $request->get('Auth');
-        $input = $request->all();
-        $result = User::where('id', $user->id)->update(['api_token' => '', 'device_type' => '', 'device_id' => '']);
+        $result = User::where('id', $user->id)->update([
+            'api_token' => '',
+            'device_type' => '',
+            'device_id' => '',
+            'fcm_token' => ''
+        ]);
         if ($result) {
             $data = (object) [];
             return ApiGlobalFunctions::sendResponse($data, ApiGlobalFunctions::messageDefault('Logout successfully.'));

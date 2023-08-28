@@ -7,6 +7,9 @@ use App\Traits\ApiGlobalFunctions;
 use Illuminate\Http\Request;
 use App\Models\PaymentLog;
 use App\Models\SubscriptionPayment;
+use App\Models\UserSubscription;
+use App\Models\Sponsor;
+use App\Models\UserEarning;
 use Stripe;
 
 class PaymentController extends Controller
@@ -63,10 +66,17 @@ class PaymentController extends Controller
             //$this->completeOrderInDatabase()
             //$this->sendMail();
             $subscriptionPayment = SubscriptionPayment::where('payment_intent_id', $clientSecret)->first();
-            if (!empty($subscriptionPayment)) {
+            if ($subscriptionPayment) {
                 $subscriptionPayment->is_payment = 1;
                 $subscriptionPayment->payment_status = 'Completed';
                 $subscriptionPayment->save();
+                $userSubscriptionId = $subscriptionPayment->user_subscription_id;
+                $userSubscriptionObj = UserSubscription::where('id', $userSubscriptionId)->first();
+                $userSubscriptionObj->is_active = 1;
+                $userSubscriptionObj->save();
+                $sponsorId = $subscriptionPayment->sponsor_id;
+                Sponsor::where('id', $sponsorId)->update(['status' => 1]);
+                UserEarning::where('sponsor_id', $sponsorId)->update(['status' => 1]);
             }
             return response()->json([
                 'intentId' => $intentObj->id,
@@ -75,6 +85,19 @@ class PaymentController extends Controller
         } elseif ($event->type == "payment_intent.payment_failed") {
             //Payment failed to be completed
             $intentObj = $event->data->object;
+            $subscriptionPayment = SubscriptionPayment::where('payment_intent_id', $clientSecret)->first();
+            if ($subscriptionPayment) {
+                $subscriptionPayment->is_payment = 0;
+                $subscriptionPayment->payment_status = 'Failed';
+                $subscriptionPayment->save();
+                $userSubscriptionId = $subscriptionPayment->user_subscription_id;
+                $userSubscriptionObj = UserSubscription::where('id', $userSubscriptionId)->first();
+                $userSubscriptionObj->is_active = 0;
+                $userSubscriptionObj->save();
+                $sponsorId = $subscriptionPayment->sponsor_id;
+                Sponsor::where('id', $sponsorId)->delete();
+                UserEarning::where('sponsor_id', $sponsorId)->delete();
+            }
             $error_message = $intentObj->last_payment_error ? $intentObj->last_payment_error->message : "";
             return response()->json([
                 'intentId' => $intentObj->id,

@@ -86,6 +86,7 @@ trait ApiGlobalFunctions
             'mobile_verified' => 'Number found in our DB.',
             'verification_failed' => 'Number not found in our DB.',
             'username_available' => 'User name available.',
+            'block_by_admin' => 'The user was blocked by the admin please content to support.',
             'username_not_available' => 'User name already taken by another.',
             'params_not_available' => 'This required parameter is not available in the request',
             'profile_created' => 'Profile Create successfully.',
@@ -135,6 +136,9 @@ trait ApiGlobalFunctions
             'invalid_signature' => 'Invalid signature.',
             'payment_success' => 'Payment successfully.',
             'bookmark_success' => 'Bookmark update successfully.',
+            'payout_minimum_not_available' => 'Payout minimum amount should be greater then %s.',
+            'payout_amount_not_available' => 'Account balance (%s) less then requested amount.',
+            'payout_success' => 'Payout initiated successfully.',
         ];
         return isset($msgArray[$label]) ? $msgArray[$label] : $label;
     }

@@ -41,7 +41,7 @@ class Sponsor extends Model
      */
     public function userSponsor()
     {
-        return $this->belongsTo(\App\Models\User::class, 'sponsor_user_id');
+        return $this->belongsTo(User::class, 'sponsor_user_id');
     }
 
     /**
@@ -51,29 +51,18 @@ class Sponsor extends Model
      */
     public function userSponsored()
     {
-        return $this->belongsTo(\App\Models\User::class, 'sponsored_user_id');
+        return $this->belongsTo(User::class, 'sponsored_user_id');
     }
-
+    
     /**
-     * parent
+     * userEarning
      *
      * @return void
      */
-    public function parent()
+    public function userEarning()
     {
-        return $this->belongsTo(self::class, 'referring_user_id');
+        return $this->hasMany(UserEarning::class, 'sponsor_id');
     }
-
-    /**
-     * children
-     *
-     * @return void
-     */
-    public function children()
-    {
-        return $this->hasMany(self::class, 'referring_user_id', 'id');
-    }
-
 
     /**
      * childrenSponsor

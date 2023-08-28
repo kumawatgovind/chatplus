@@ -18,6 +18,8 @@
         "laravelcollective/html": "^6.3",
         "league/flysystem-aws-s3-v3": "^1.0",
         "livewire/livewire": "^2.5",
+        "phpoffice/phpspreadsheet": "^1.29",
+        "razorpay/razorpay": "2.*",
         "stripe/stripe-php": "^10.15",
         "symfony/yaml": "^5.2"
     },

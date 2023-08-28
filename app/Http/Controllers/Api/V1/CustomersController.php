@@ -24,14 +24,6 @@ class CustomersController extends Controller
         $data = [];
         try {
             // dd($request->all());
-            // $validator = (object) Validator::make($request->all(), [
-            //     'post_type' => 'required',
-            //     'content' => 'nullable',
-            //     'post_visibility' => 'required',
-            // ]);
-            // if ($validator->fails()) {
-            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            // }
             if ($customer = CustomerRepository::create($request)) {
                 $postResponse = CustomerRepository::getSingle($customer->id);
                 $data['status'] = true;

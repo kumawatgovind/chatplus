@@ -15,25 +15,33 @@ use Exception;
 class ServiceProductRepository
 {
     /**
-     * create
+     * createUpdate
      *
      * @param  mixed $request
      * @return obj
      */
-    public static function create(Request $request)
+    public static function createUpdate(Request $request)
     {
         DB::beginTransaction();
         try {
             $authUser = $request->get('Auth');
-            $serviceProduct = new ServiceProduct();
+            if ($serviceProductId = $request->input('service_id', false)) {
+                $serviceProduct = ServiceProduct::where('id', $serviceProductId)->first();
+            } else {
+                $serviceProduct = new ServiceProduct();
+            }
             $serviceProduct->user_id = $authUser->id;
             $serviceProduct->product_type = $serviceProductType = $request->input('product_type', false);
             $serviceProduct->product_for = $request->input('product_for', false);
-            $serviceProduct->category_id = $request->input('category_id', false);
-            $serviceProduct->sub_category_id = $request->input('sub_category_id', false);
+            $serviceProduct->category_id = $request->input('category_id', 0);
+            $serviceProduct->sub_category_id = $request->input('sub_category_id', 0);
             $serviceProduct->title = $request->input('title', false);
-            $serviceProduct->locality = $request->input('locality', false);
-            $serviceProduct->city = $request->input('city', false);
+            $serviceProduct->locality_id = $request->input('locality_id', 0);
+            $serviceProduct->city_id = $request->input('city_id', 0);
+            $serviceProduct->state_id = $request->input('state_id', 0);
+            // $serviceProduct->locality = $request->input('locality', false);
+            // $serviceProduct->city = $request->input('city', false);
+            // $serviceProduct->state = $request->input('state', false);
             $serviceProduct->address = $request->input('address', false);
             $serviceProduct->price = $request->input('price', false);
             $serviceProduct->description = $request->input('description', false);
@@ -43,6 +51,11 @@ class ServiceProductRepository
             $propertyAttribute = $request->input('property_attribute') ?? [];
             if ($serviceProduct->save()) {
                 if (!empty($serviceProductImages)) {
+                    if ($request->input('service_id', false)) {
+                        ServiceProductImage::where([
+                            'service_product_id' => $serviceProductId,
+                        ])->delete();
+                    }
                     $ordering = 1;
                     foreach ($serviceProductImages as $value) {
                         if (!empty($value)) {
@@ -110,11 +123,29 @@ class ServiceProductRepository
             }, 'subCategory' => function ($q) {
                 $q->select('id', 'name', 'icon');
             },
+            'state' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'city' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'locality' => function ($q) {
+                $q->select('id', 'name');
+            },
             'serviceProductImage',
             'propertyAttribute',
             'serviceUser',
             'serviceUser.userServicesProfile',
-            'serviceUser.userServicesProfile.serviceImages'
+            'serviceUser.userServicesProfile.serviceImages',
+            'serviceUser.userServicesProfile.state' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'serviceUser.userServicesProfile.city' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'serviceUser.userServicesProfile.locality' => function ($q) {
+                $q->select('id', 'name');
+            }
         ]);
 
         $query = $query->where('id', $serviceProductId);
@@ -161,10 +192,28 @@ class ServiceProductRepository
             }, 'serviceProductImage'  => function ($q) {
                 $q->select('id', 'name', 'service_product_id');
             },
+            'state' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'city' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'locality' => function ($q) {
+                $q->select('id', 'name');
+            },
             'propertyAttribute',
             'serviceUser',
             'serviceUser.userServicesProfile',
-            'serviceUser.userServicesProfile.serviceImages'
+            'serviceUser.userServicesProfile.serviceImages',
+            'serviceUser.userServicesProfile.state' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'serviceUser.userServicesProfile.city' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'serviceUser.userServicesProfile.locality' => function ($q) {
+                $q->select('id', 'name');
+            }
         ]);
         if ($request->input('category_id', false)) {
             $categoryId  = $request->input('category_id', 0);
@@ -319,10 +368,28 @@ class ServiceProductRepository
             }, 'serviceProductImage'  => function ($q) {
                 $q->select('id', 'name', 'service_product_id');
             },
+            'state' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'city' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'locality' => function ($q) {
+                $q->select('id', 'name');
+            },
             'propertyAttribute',
             'serviceUser',
             'serviceUser.userServicesProfile',
-            'serviceUser.userServicesProfile.serviceImages'
+            'serviceUser.userServicesProfile.serviceImages',
+            'serviceUser.userServicesProfile.state' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'serviceUser.userServicesProfile.city' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'serviceUser.userServicesProfile.locality' => function ($q) {
+                $q->select('id', 'name');
+            }
         ]);
         if ($request->input('category_id', false)) {
             $categoryId  = $request->input('category_id', 0);

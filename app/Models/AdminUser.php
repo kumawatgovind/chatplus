@@ -258,9 +258,9 @@ class AdminUser extends Authenticatable implements MustVerifyEmail
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeStatus($query, $status = null)
+    public function scopeStatus($query, $status = 0)
     {
-        if ($status === '0' || $status == 1) {
+        if ($status == 1) {
             $query->where('status', $status);
         }
         return $query;

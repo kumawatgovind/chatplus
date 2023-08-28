@@ -5,16 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Kyslik\ColumnSortable\Sortable;
 
 class Product extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Sortable;
 
     protected $fillable = [
         "user_id",
         "title",
         "locality",
         "city",
+        "state",
+        "state_id",
+        "city_id",
+        "locality_id",
         "price",
         "description",
         "latitude",
@@ -75,15 +80,45 @@ class Product extends Model
     }
 
     /**
-     * user
+     * users
      *
      * @return void
      */
-    public function user()
+    public function users()
     {
-        return $this->belongsTo(\App\Models\User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * state
+     *
+     * @return void
+     */
+    public function state()
+    {
+        return $this->belongsTo(State::class, 'state_id');
+    } 
+
+    /**
+     * city
+     *
+     * @return void
+     */
+    public function city()
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    /**
+     * locality
+     *
+     * @return void
+     */
+    public function locality()
+    {
+        return $this->belongsTo(Locality::class, 'locality_id');
+    }  
+    
     /**
      * scopeFilter
      *
@@ -94,7 +129,7 @@ class Product extends Model
     public function scopeFilter($query, $keyword)
     {
         if (!empty($keyword)) {
-            $query->where('title', $keyword);
+            $query->where('title', 'LIKE', '%' . $keyword . '%');
         }
         return $query;
     }

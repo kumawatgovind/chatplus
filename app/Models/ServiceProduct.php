@@ -17,8 +17,12 @@ class ServiceProduct extends Model
         "category_id",
         "sub_category_id",
         "title",
+        "locality_id",
+        "city_id",
+        "state_id",
         "locality",
         "city",
+        "state",
         "address",
         "price",
         "description",
@@ -146,6 +150,36 @@ class ServiceProduct extends Model
     {
         return $this->userServiceProductBookmark->contains($user);
     }
+
+    /**
+     * state
+     *
+     * @return void
+     */
+    public function state()
+    {
+        return $this->belongsTo(State::class, 'state_id');
+    } 
+
+    /**
+     * city
+     *
+     * @return void
+     */
+    public function city()
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    /**
+     * locality
+     *
+     * @return void
+     */
+    public function locality()
+    {
+        return $this->belongsTo(Locality::class, 'locality_id');
+    }  
 
     /* scopeStatus
      *

@@ -1,8 +1,8 @@
-<?php 
+<?php
 $email = old('email');
 $password = old('password');
 $remember = false;
-if((isset($_COOKIE['email']) || !empty($_COOKIE['email'])) && (isset($_COOKIE['password']) || !empty($_COOKIE['password']))){
+if ((isset($_COOKIE['email']) || !empty($_COOKIE['email'])) && (isset($_COOKIE['password']) || !empty($_COOKIE['password']))) {
     $email = $_COOKIE['email'];
     $password = $_COOKIE['password'];
     $remember = true;
@@ -11,13 +11,13 @@ if((isset($_COOKIE['email']) || !empty($_COOKIE['email'])) && (isset($_COOKIE['p
 <x-guest-layout>
     <x-auth-card>
         <x-slot name="logo">
-            <a>
+            <h1 style="font-size: 26px;font-weight: 600;">
                 <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-            </a>
+            </h1>
         </x-slot>
-        <div class="mb-4 text-sm text-gray-600">
-            <h1 class="mb-4 text-center" style="font-size: 26px;font-weight: 600;">{{ __('Login') }}</h1>
-        </div>
+        <!-- <div class="mb-4 text-sm text-gray-600">
+            <h2 class="mb-4 text-center" style="font-size: 26px;font-weight: 600;"></h2>
+        </div> -->
         <!-- Session Status -->
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
@@ -40,11 +40,7 @@ if((isset($_COOKIE['email']) || !empty($_COOKIE['email'])) && (isset($_COOKIE['p
             <div class="mt-4 form-group required {{ $errors->has('password') ? 'has-error' : '' }}">
                 <x-label for="password" :value="__('Password')" />
 
-                <x-input id="password" class="block mt-1 w-full form-control {{ $errors->has('password') ? ' is-invalid' : '' }}"
-                                type="password"
-                                name="password"
-                                value="{{ $password }}"
-                                autocomplete="current-password" maxlength="50"/>
+                <x-input id="password" class="block mt-1 w-full form-control {{ $errors->has('password') ? ' is-invalid' : '' }}" type="password" name="password" value="{{ $password }}" autocomplete="current-password" maxlength="50" />
                 @if($errors->has('password'))
                 <span class="help-block">{{ $errors->first('password') }}</span>
                 @endif
@@ -57,13 +53,15 @@ if((isset($_COOKIE['email']) || !empty($_COOKIE['email'])) && (isset($_COOKIE['p
                     <span class="ml-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
                 </label>
             </div>
+            {{--
             <div class="block items-center mt-4">
                 @if (Route::has('admin.password.request'))
-                    <a class="underline text-sm text-gray-600 hover:text-gray-900" href="{{ route('admin.password.request') }}">
-                        {{ __('Forgot Password?') }}
-                    </a>
+                <a class="underline text-sm text-gray-600 hover:text-gray-900" href="{{ route('admin.password.request') }}">
+                    {{ __('Forgot Password?') }}
+                </a>
                 @endif
             </div>
+            --}}
             <div class="items-center justify-cen mt-4">
                 <x-button class="btn btn-block btn-primary btn-sm">
                     {{ __('Log in') }}
@@ -79,11 +77,13 @@ if((isset($_COOKIE['email']) || !empty($_COOKIE['email'])) && (isset($_COOKIE['p
         font-weight: bold;
         margin-left: 5px;
     }
+
     .alert-success {
         color: #fff;
         background-color: #28a745;
         border-color: #23923d;
     }
+
     .alert {
         position: relative;
         padding: .75rem 1.25rem;
@@ -91,38 +91,46 @@ if((isset($_COOKIE['email']) || !empty($_COOKIE['email'])) && (isset($_COOKIE['p
         border: 1px solid transparent;
         border-radius: .25rem;
     }
-    .alert .close, .alert .mailbox-attachment-close {
-    color: #000;
-    opacity: .2;
-}
+
+    .alert .close,
+    .alert .mailbox-attachment-close {
+        color: #000;
+        opacity: .2;
+    }
+
     .btn-block {
         display: block;
         width: 30%;
     }
+
     .btn-sm {
         padding: .25rem .5rem;
         font-size: .875rem;
         line-height: 1.5;
         border-radius: .2rem;
     }
+
     .btn-primary {
         color: #fff;
         background-color: #007bff;
         border-color: #007bff;
         box-shadow: none;
     }
+
     .help-block {
         width: 100%;
         margin-top: .25rem;
         font-size: 80%;
         color: #dc3545;
     }
-    .form-control.is-invalid, .was-validated .form-control:invalid {
+
+    .form-control.is-invalid,
+    .was-validated .form-control:invalid {
         border-color: #dc3545;
         padding-right: 0rem;
         background-image: url("");
         background-repeat: no-repeat;
         background-position: right calc(.0rem) center;
-        background-size: calc( .0rem);
+        background-size: calc(.0rem);
     }
 </style>

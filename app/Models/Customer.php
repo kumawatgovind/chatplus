@@ -16,8 +16,12 @@ class Customer extends Model
         "user_id",
         "name",
         "contact_number",
+        "state",
         "city",
         "locality",
+        "state_id",
+        "city_id",
+        "locality_id",
         "description",
         "status",
     ];
@@ -55,14 +59,44 @@ class Customer extends Model
     }
 
     /**
-     * user
+     * users
      *
      * @return void
      */
-    public function user()
+    public function users()
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
+
+    /**
+     * state
+     *
+     * @return void
+     */
+    public function state()
+    {
+        return $this->belongsTo(State::class, 'state_id');
+    } 
+
+    /**
+     * city
+     *
+     * @return void
+     */
+    public function city()
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    /**
+     * locality
+     *
+     * @return void
+     */
+    public function locality()
+    {
+        return $this->belongsTo(Locality::class, 'locality_id');
+    } 
 
 
     /**
@@ -75,7 +109,7 @@ class Customer extends Model
     public function scopeFilter($query, $keyword)
     {
         if (!empty($keyword)) {
-            $query->where('title', $keyword);
+            $query->where('name', 'LIKE', '%' . $keyword . '%');
         }
         return $query;
     }

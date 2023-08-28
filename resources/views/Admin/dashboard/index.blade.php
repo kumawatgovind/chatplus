@@ -136,18 +136,6 @@
         <div class="row">
             <div class="col-lg-4 col-6">
                 <!-- small box -->
-                <div class="small-box bg-success">
-                    <div class="inner">
-                        <h3>{{ $payoutWeeklyTotal }}</h3>
-                        <p>Total Kyc</p>
-                    </div>
-                    <div class="icon">
-                        <i class="nav-icon fas fa-check-double"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-6">
-                <!-- small box -->
                 <div class="small-box bg-danger">
                     <div class="inner">
                         <h3>{{ $payoutMonthTotal }}</h3>
@@ -163,7 +151,19 @@
                 <div class="small-box bg-info">
                     <div class="inner">
                         <h3>{{ $payoutTotal }}</h3>
-                        <p>Re - Kyc</p>
+                        <p>Failed kyc</p>
+                    </div>
+                    <div class="icon">
+                        <i class="nav-icon fas fa-check-double"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-6">
+                <!-- small box -->
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ $payoutWeeklyTotal }}</h3>
+                        <p>Total Kyc</p>
                     </div>
                     <div class="icon">
                         <i class="nav-icon fas fa-check-double"></i>

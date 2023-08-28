@@ -10,8 +10,9 @@ use App\Models\ServiceProfile;
 use App\Models\ServiceImage;
 use App\Models\Referral;
 use App\Models\User;
+use App\Models\ReportedSpam;
 use App\Models\ReferralCount;
-
+use Illuminate\Support\Facades\DB;
 use function is;
 use function is_null;
 
@@ -34,9 +35,22 @@ class UserRepository
                 'userServicesProfile.category' => function ($q) {
                     $q->select('id', 'name', 'icon');
                 },
+                'userServicesProfile.state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'userServicesProfile.city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'userServicesProfile.locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'kycDocument' => function ($q) {
+                    $q->orderBy('id', 'DESC');
+                },
                 'activeSubscription'
             ])
             ->where('id', $id)->first();
+
         $updateResponse = [];
         if (!empty($userData)) {
             if (!empty($userData->userServicesProfile)) {
@@ -77,20 +91,21 @@ class UserRepository
     public static function store(Request $request)
     {
         $user = new User();
-        $user->username = $request->request->get('username', false);
-        $user->parent_id = $request->request->get('parent_id', 0);
-        $user->name = $request->request->get('name', false);
-        $user->email = $request->request->get('email', false);
+        $user->username = $request->input('username', false);
+        $user->parent_id = $request->input('parent_id', 0);
+        $user->name = $request->input('name', false);
+        $user->email = $request->input('email', false);
         $user->password = bcrypt('123456');
-        $user->country_code = $request->request->get('country_code', false);
-        $user->phone_number = $request->request->get('phone_number', false);
-        $user->profile_image = $request->request->get('profile_image', false);
-        $user->device_id = $request->request->get('device_id', false);
-        $user->device_type = $request->request->get('device_type', false);
-        $user->firebase_id = $request->request->get('firebase_id', false);
-        $user->firebase_email = $request->request->get('firebase_email', false);
-        $user->firebase_password = $request->request->get('firebase_password', false);
-        $user->fcm_token = $request->request->get('fcm_token', false);
+        $user->country_code = $request->input('country_code', false);
+        $user->phone_number = $request->input('phone_number', false);
+        $user->profile_image = $request->input('profile_image', false);
+        $user->device_id = $request->input('device_id', false);
+        $user->device_type = $request->input('device_type', false);
+        $user->firebase_id = $request->input('firebase_id', false);
+        $user->firebase_email = $request->input('firebase_email', false);
+        $user->firebase_password = $request->input('firebase_password', false);
+        $user->fcm_token = $request->input('fcm_token', false);
+        $user->referral_code = ReferralSystem::createReferralCode(8);
         $user->status = 1;
         if ($user->save()) {
             return $user;
@@ -108,6 +123,8 @@ class UserRepository
     public static function storeServiceProfile(Request $request)
     {
         $authUserId = $request->get('Auth')->id;
+        $user = User::where('id', $authUserId)->first();
+        $referralCode = $user->referral_code;
         $serviceProfile = new ServiceProfile();
         $serviceProfile->user_id = $authUserId;
         $serviceProfile->category_id = $request->input('category_id', 0);
@@ -119,6 +136,9 @@ class UserRepository
         $serviceProfile->street_name = $request->input('street_name', '');
         $serviceProfile->building_name = $request->input('building_name', '');
         $serviceProfile->pin_code = $request->input('pin_code', '');
+        $serviceProfile->city_id = $request->input('city_id', 0);
+        $serviceProfile->state_id = $request->input('state_id', 0);
+        $serviceProfile->locality_id = $request->input('locality_id', 0);
         $serviceProfile->city = $request->input('city', '');
         $serviceProfile->state = $request->input('state', '');
         $serviceProfile->locality = $request->input('locality', '');
@@ -127,14 +147,10 @@ class UserRepository
         $serviceProfile->latitude = $request->input('latitude', '');
         $serviceProfile->longitude = $request->input('longitude', '');
         $serviceProfile->status = 1;
-        $serviceProfile->referral_code = $referralCode = ReferralSystem::createReferralCode(8);
+        $serviceProfile->referral_code = $referralCode;
         $servicesProfileImages = $request->input('services_profile_images') ?? [];
         $serviceBusinessHour = $request->input('service_business_hour') ?? [];
-
         if ($serviceProfile->save()) {
-            $user = User::where('id', $authUserId)->first();
-            $user->referral_code = $referralCode;
-            $user->save();
             if (!empty($servicesProfileImages)) {
                 $ordering = 1;
                 foreach ($servicesProfileImages as $value) {
@@ -173,8 +189,12 @@ class UserRepository
     public static function updateProfile(Request $request)
     {
         $authUser = $request->get('Auth');
+        $update = [];
         if ($request->input('name', false)) {
             $update['name'] = $request->input('name', false);
+        }
+        if ($request->input('email', false)) {
+            $update['email'] = $request->input('email', false);
         }
         if ($request->input('bio', false)) {
             $update['bio'] = $request->input('bio', false);
@@ -242,6 +262,15 @@ class UserRepository
         if ($request->input('locality', false)) {
             $update['locality'] = $request->input('locality', false);
         }
+        if ($request->input('city_id', false)) {
+            $update['city_id'] = $request->input('city_id', false);
+        }
+        if ($request->input('state_id', false)) {
+            $update['state_id'] = $request->input('state_id', false);
+        }
+        if ($request->input('locality_id', false)) {
+            $update['locality_id'] = $request->input('locality_id', false);
+        }
         if ($request->input('website', false)) {
             $update['website'] = $request->input('website', false);
         }
@@ -287,7 +316,7 @@ class UserRepository
     {
         $authUser = $request->get('Auth');
         if ($request->input('referral_code', false)) {
-            return User::where('referral_code', $request->input('referral_code', false))
+            return User::withCount('userSponsor')->where('referral_code', $request->input('referral_code', false))
                 ->where('id', '!=', $authUser->id)->first();
         }
     }
@@ -344,7 +373,13 @@ class UserRepository
         }
         return $serviceProfiles;
     }
-
+    
+    /**
+     * updateFcmUpdate
+     *
+     * @param  mixed $request
+     * @return void
+     */
     public static function updateFcmUpdate(Request $request)
     {
         $authUser = $request->get('Auth');
@@ -355,5 +390,26 @@ class UserRepository
             }
         }
         return false;
+    }
+    
+    /**
+     * spamReported
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public static function spamReported(Request $request)
+    {
+        $authUser = $request->get('Auth');
+        $reportedSpam = new ReportedSpam();
+        $reportedSpam->item_id = $request->input('reported_for', false);
+        $reportedSpam->description = $request->input('description', false);
+        $reportedSpam->type = 1;
+        $reportedSpam->reported_by = $authUser->id;
+        if ($reportedSpam->save()) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

@@ -95,7 +95,7 @@ class AdminUserController extends Controller
     public function edit(AdminUser $adminUser)
     {
         $response = Gate::inspect('check-user', "admin_users-create");
-        if (!$response->allowed() || auth()->guard('admin')->user()->id==$adminUser->id|| $adminUser->id ==1) {
+        if (!$response->allowed() || auth()->guard('admin')->user()->id == $adminUser->id || $adminUser->id == 1) {
             return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
         }
         $roles = AdminRole::active()->pluck('title', 'id');
@@ -112,10 +112,9 @@ class AdminUserController extends Controller
     public function update(AdminUserRequest $request, AdminUser $adminUser)
     {
         // dd($request);
-        if(!isset($request->status))
-        {
+        if (!isset($request->status)) {
             $request['status'] = 0;
-        }else{
+        } else {
             $request['status'] = 1;
         }
         $response = Gate::inspect('check-user', "admin_users-create");
@@ -170,7 +169,7 @@ class AdminUserController extends Controller
         $end_date   = '';
         $recordType = [];
         $type  = request('type');
-        
+
         return view('Admin.adminUsers.report', compact('recordType', 'start_date', 'end_date', 'type'));
     }
 
@@ -184,7 +183,6 @@ class AdminUserController extends Controller
     public function profile(Request $request)
     {
         $adminUser = AdminUser::status(1)->where('id', \Auth::user()->id)->first();
-
         return view('Admin.adminUsers.profile', compact('adminUser'));
     }
 
@@ -196,12 +194,12 @@ class AdminUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function updateprofile(Request $request)
+    public function updateProfile(Request $request)
     {
         $request->validate([
             'first_name' => 'required|regex:/^[\pL\s\-.\']+$/u|min:2|max:100',
             'last_name' => 'nullable|regex:/^[\pL\s\-.\']+$/u|min:2|max:100',
-            'mobile' => ['required', 'numeric', 'min:10', new CheckPhone],
+            'mobile' => ['required', 'numeric', 'min:10'],
         ]);
         $adminUser = AdminUser::status(1)->where('id', \Auth::user()->id)->first();
         //dd($request->all());

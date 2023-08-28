@@ -7,6 +7,8 @@ use App\Models\ServiceProfile;
 use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class Helper
 {
@@ -80,5 +82,60 @@ class Helper
         }
         $data[] = date('Y-m-d', strtotime($endDate));
         return array_unique($data);
+    }
+
+    /**
+	 * Run Curl using this function
+	 */
+	public static function curlRequest($data, $apiUrl, $method = 'POST')
+	{
+        $payoutKey = config('constants.PAYOUT_KEY_ID');
+        $payoutSecret = config('constants.PAYOUT_KEY_SECRET');
+        $url = config('constants.PAYOUT_URL') . $apiUrl;
+        $jsonData = json_encode($data);
+        
+        $token = base64_encode($payoutKey.':'.$payoutSecret);
+        // dd($url, $data, $token);
+		$curlHeader = array(
+			"Content-Type: application/json",
+			"Authorization: Basic ".$token,
+		);
+		$requestDataCurl = array(
+			CURLOPT_URL => $url, // your preferred url
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_ENCODING => "",
+			CURLOPT_MAXREDIRS => 10,
+			CURLOPT_TIMEOUT => 86400,
+			CURLOPT_CONNECTTIMEOUT => 60000,
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST => $method,
+			CURLOPT_POSTFIELDS => $jsonData,
+			CURLOPT_HTTPHEADER => $curlHeader
+		);
+
+		$curl = curl_init();
+		curl_setopt_array(
+			$curl,
+			$requestDataCurl
+		);
+		$response = curl_exec($curl);
+		$err = curl_error($curl);
+		$httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+		curl_close($curl);
+		return ['httpCode' => $httpCode, 'response' => $response, 'err' => $err];
+	}
+    
+    /**
+     * getXlsxData
+     *
+     * @param  mixed $filePath
+     * @return array
+     */
+    public static function getXlsxData($filePath)
+    {
+        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+        $spreadSheet = $reader->load($filePath);
+        $excelSheet = $spreadSheet->getActiveSheet();
+        return $excelSheet->toArray();
     }
 }

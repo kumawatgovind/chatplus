@@ -9,8 +9,8 @@ use App\Traits\ApiGlobalFunctions;
 use Illuminate\Http\Request;
 use App\Repositories\SubscriptionRepository;
 use App\Repositories\UserRepository;
-use App\Models\PaymentLog;
 use App\Repositories\SponsorRepository;
+use App\Repositories\RazorPayRepository;
 use Stripe;
 use Mail, Exception, Auth, Hash, Session;
 
@@ -146,22 +146,31 @@ class SubscriptionsController extends Controller
             if ($validator->fails()) {
                 return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             }
-            // if (UserRepository::checkReferralCode($request)) {
+            // $authUser = $request->get('Auth');
+            // $isReferCodeUser = UserRepository::checkReferralCode($request);
+            // $userLevelArray = ReferralSystem::getCurrentLevelArray($authUser->id);
+            // $userLevel = ReferralSystem::getCheckCurrentLevel($isReferCodeUser->id);
+            // dd($isReferCodeUser->id, $userLevelArray);
             // Add Sponsors after checking referral code
             $sponsors = SponsorRepository::addSponsors($request);
             extract($sponsors);
             if ($status) {
-                ReferralSystem::checkReferral($request);
-            }
-            if ($paymentRequest = SubscriptionRepository::paymentRequest($request)) {
-                $data['status'] = true;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('payment_request');
-                $data['data'] = $paymentRequest;
+                ReferralSystem::manageReferral($request, $sponsorData);
+                $request->merge(['sponsor_id' => $sponsorData->id]);
+                if ($paymentRequest = SubscriptionRepository::paymentRequest($request)) {
+                    $data['status'] = true;
+                    $data['code'] = config('response.HTTP_OK');
+                    $data['message'] = ApiGlobalFunctions::messageDefault('payment_request');
+                    $data['data'] = $paymentRequest;
+                } else {
+                    $data['status'] = false;
+                    $data['code'] = config('response.HTTP_OK');
+                    $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+                }
             } else {
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+                $data['message'] = $message;
             }
             // } else {
             //     $data['status'] = false;
@@ -205,6 +214,117 @@ class SubscriptionsController extends Controller
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+     /**
+     * paymentRequest
+     *
+     * @param  mixed $request
+     * @return json
+     */
+    public function payoutRequest(Request $request)
+    {
+        $minimumPayout = config('constants.MINIMUM_PAYOUT');
+        $data = [];
+        try {
+            $validator = (object) Validator::make($request->all(), [
+                'payout_amount' => 'nullable',
+            ]);
+            if ($validator->fails()) {
+                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            }
+            $payoutAmount = $request->input('payout_amount', 0);
+            if ($payoutAmount >= $minimumPayout) {
+                $totalTransaction = SponsorRepository::getTransactionHistory($request);
+                if ($totalTransaction['total_remaining'] > $payoutAmount) {
+                    $payoutContact = RazorPayRepository::createPayoutContact($request);
+                    extract($payoutContact);
+                    if ($contactStatus) {
+                        $payoutFundAccount = RazorPayRepository::createPayoutFundAccount($request, $contactData);
+                        extract($payoutFundAccount);
+                        if ($accountStatus) {
+                            $payout = RazorPayRepository::createPayout($request, $fundData);
+                            extract($payout);
+                            if ($payoutStatus) {
+                                if ($payoutRequest = SubscriptionRepository::payoutRequest($request)) {
+                                    $data['status'] = true;
+                                    $data['code'] = config('response.HTTP_OK');
+                                    $data['message'] = ApiGlobalFunctions::messageDefault('payout_success');
+                                    $data['data'] = $payoutRequest;
+                                } else {
+                                    $data['status'] = false;
+                                    $data['code'] = config('response.HTTP_OK');
+                                    $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+                                }
+                            } else {
+                                $data['status'] = false;
+                                $data['code'] = config('response.HTTP_OK');
+                                $data['message'] = $error;
+                            }
+                        } else {
+                            $data['status'] = false;
+                            $data['code'] = config('response.HTTP_OK');
+                            $data['message'] = $error;
+                        }
+                    } else {
+                        $data['status'] = false;
+                        $data['code'] = config('response.HTTP_OK');
+                        $data['message'] = $error;
+                    }
+                } else {
+                    $data['status'] = false;
+                    $data['code'] = config('response.HTTP_OK');
+                    $data['message'] = sprintf(ApiGlobalFunctions::messageDefault('payout_amount_not_available'), $totalTransaction['total_remaining']);
+                }
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = sprintf(ApiGlobalFunctions::messageDefault('payout_minimum_not_available'), $minimumPayout);
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /**
+     * checkPayout
+     *
+     * @param  mixed $request
+     * @return json
+     */
+    public function checkPayout(Request $request)
+    {
+        $data = [];
+        try {
+            $payout = RazorPayRepository::checkPayout($request);
+            extract($payout);
+            if ($payoutStatus) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('payout_success');
+                $data['data'] = $payoutData;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = $error;
             }
         } catch (\Exception $e) {
             $data['status'] = false;

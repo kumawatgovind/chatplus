@@ -171,7 +171,30 @@ $masterData = [
     ],
 
 ];
-
+$commissionPercentages = [
+    1 => 10,
+    2 => 7.5,
+    3 => 5,
+    4 => 5,
+    5 => 3,
+    6 => 3,
+    7 => 3,
+];
+$kycStatus = [
+    0 => 'Pending',
+    1 => 'Completed',
+    2 => 'In-Progress',
+    3 => 'Failed',
+];
+$transactionType = [
+    0 => 'Other',
+    1 => 'Refer',
+    2 => 'Bank transfer',
+    3 => 'Prime Subscription',
+    4 => 'Subscription In-Progress',
+    5 => 'Subscription Canceled',
+    6 => 'Subscription Failed',
+];
 
 return [
     'DEBUG_MODE' => TRUE,
@@ -186,13 +209,15 @@ return [
     'STRIPE_PUBLISHABLE_KEY' => env('STRIPE_KEY'),
     'STRIPE_WEBHOOK_SECRET' => env('STRIPE_WEBHOOK'),
     'SERVICE_PRODUCT_LIMIT' => 30,
-    'COMMISSION_PERCENTAGES' => [
-        1 => 10,
-        2 => 7.5,
-        3 => 5,
-        4 => 5,
-        5 => 3,
-        6 => 3,
-        7 => 3,
-    ]
+    'COMMISSION_PERCENTAGES' => $commissionPercentages,
+    'KYC_STATUS' => $kycStatus,
+    'TRANSACTION_TYPE' => $transactionType,
+    'MINIMUM_PAYOUT' => 100,
+    'PAYOUT_URL' => 'https://api.razorpay.com/v1/',
+    'PAYOUT_KEY_ID' => env('PAYOUT_KEY_ID'),
+    'PAYOUT_KEY_SECRET' => env('PAYOUT_KEY_SECRET'),
+    'PAYMENT_MODE' => 'IMPS',
+    'PAYMENT_PURPOSE' => 'payout',
+    'PAYOUT_ACCOUNT_NUMBER' => '2323230025300756',
+    'DEFAULT_COUNTRY' => 1,
 ];

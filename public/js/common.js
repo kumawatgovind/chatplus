@@ -3,7 +3,7 @@ function numericFilter(txb) {
 }
 
 function wowMsg(str, subjtitle) {
-    if (typeof(subjtitle) == "undefined")
+    if (typeof (subjtitle) == "undefined")
         subjtitle = "Message Box";
     var unique_id = $.gritter.add({
         // (string | mandatory) the heading of the notification
@@ -21,7 +21,7 @@ function wowMsg(str, subjtitle) {
     });
 
     // You can have it return a unique id, this can be used to manually remove it later using
-    setTimeout(function() {
+    setTimeout(function () {
         $.gritter.remove(unique_id, {
             fade: true,
             speed: 'slow'
@@ -38,7 +38,7 @@ function wowMsg(str, subjtitle) {
 //    }
 //});
 
-$('.switch-status.change-request').on('switchChange.bootstrapSwitch', function(e, state) {
+$('.switch-status.change-request').on('switchChange.bootstrapSwitch', function (e, state) {
     var _this = $(this);
     var _id = _this.data("id");
     var url = _this.data("url");
@@ -62,7 +62,7 @@ $('.switch-status.change-request').on('switchChange.bootstrapSwitch', function(e
             'confirm': {
                 text: 'Yes',
                 btnClass: 'btn-blue',
-                action: function() {
+                action: function () {
                     if (url == undefined) {
                         url = baseurl + 'admin/' + table + '/change-flag/';
                     }
@@ -77,14 +77,14 @@ $('.switch-status.change-request').on('switchChange.bootstrapSwitch', function(e
                         headers: {
                             "accept": "application/json",
                         },
-                        beforeSend: function(xhr) {
+                        beforeSend: function (xhr) {
                             xhr.setRequestHeader('X-CSRF-Token', CLIENT_TOKEN);
                         },
-                        complete: function() {},
-                        success: function(record) {
+                        complete: function () { },
+                        success: function (record) {
                             wowMsg(record.message);
                         },
-                        error: function(xhr, ajaxOptions, thrownError) {
+                        error: function (xhr, ajaxOptions, thrownError) {
                             alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
                         }
                     });
@@ -92,7 +92,7 @@ $('.switch-status.change-request').on('switchChange.bootstrapSwitch', function(e
             },
             cancelAction: {
                 text: 'Cancel',
-                action: function() {
+                action: function () {
                     if (changedval == 1) {
                         _this.bootstrapSwitch('state', false, 'skip');
                     } else {
@@ -104,25 +104,25 @@ $('.switch-status.change-request').on('switchChange.bootstrapSwitch', function(e
     });
 
 });
-$(document).on('click', '.confirmDeleteBtn', function() {
+$(document).on('click', '.confirmDeleteBtn', function () {
     var _this = $(this);
     var _id = _this.data("id");
     var url = _this.data("url");
     var message = _this.data("message");
     var title = _this.data("title");
     var action = _this.data("action");
-    
-    if(message == 'undefined'){
+
+    if (message == 'undefined') {
         message = 'Are you sure want to delete this record?';
-    }else{
+    } else {
         message = message;
     }
-    if(action == 'undefined'){
+    if (action == 'undefined') {
         actionB = 'DELETE';
-    }else{
+    } else {
         actionB = action;
     }
-    
+
     $.confirm({
         title: 'Alert',
         content: message,
@@ -135,7 +135,7 @@ $(document).on('click', '.confirmDeleteBtn', function() {
             'confirm': {
                 text: 'Yes',
                 btnClass: 'btn-blue',
-                action: function() {
+                action: function () {
                     $.ajax({
                         url: url,
                         type: actionB,
@@ -147,7 +147,7 @@ $(document).on('click', '.confirmDeleteBtn', function() {
                         beforeSend: function (xhr) {
                             $('.loader').removeClass('hide');
                         },
-                        success: function(record) {
+                        success: function (record) {
                             $('.loader').addClass('hide');
                             if (record.status == true) {
                                 $.alert({
@@ -157,32 +157,32 @@ $(document).on('click', '.confirmDeleteBtn', function() {
                                     type: 'green',
                                     content: record.message,
                                     buttons: {
-                                          Ok: function(){
-                                              //location.reload();
-                                              if (_this.hasClass("noreload")) {
+                                        Ok: function () {
+                                            //location.reload();
+                                            if (_this.hasClass("noreload")) {
                                                 $(".table-row-" + record.data.id).remove();
                                             } else {
                                                 location.reload();
                                             }
-                                          }
-                                      }
-                                    });
+                                        }
+                                    }
+                                });
                                 if (_this.hasClass("reload")) {
                                     location.reload();
                                 } else {
                                     $(".row-" + record.data.id).remove();
                                 }
-                            }else{
+                            } else {
                                 $.alert({
                                     columnClass: 'medium',
                                     title: 'Error',
-                                    icon:  'fa fa-warning',
-                                    type:  'red',
+                                    icon: 'fa fa-warning',
+                                    type: 'red',
                                     content: record.message,
-                                    });
+                                });
                             }
                         },
-                        error: function(xhr, ajaxOptions, thrownError) {
+                        error: function (xhr, ajaxOptions, thrownError) {
                             alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
                         }
                     });
@@ -219,7 +219,7 @@ function confirmDelete(elem, title) {
             'confirm': {
                 text: 'Yes',
                 btnClass: 'btn-blue',
-                action: function() {
+                action: function () {
                     var action = $(elem).prev('form').attr('action');
                     if (action.indexOf('delete') > -1) {
                         $(elem).prev('form').submit();
@@ -233,21 +233,21 @@ function confirmDelete(elem, title) {
     });
 }
 
-$(".recrodData").click(function(event) {
+$(".recrodData").click(function (event) {
     event.preventDefault();
     var urlData = jQuery(this).attr("data-url");
     var self = this;
     $.ajax({
         url: urlData,
-        dataType : "html",
+        dataType: "html",
         headers: {
-           
+
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         },
-        success: function(record) {
+        success: function (record) {
             location.href = jQuery(self).attr("href");
         },
-        error: function(xhr, ajaxOptions, thrownError) {
+        error: function (xhr, ajaxOptions, thrownError) {
             alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
         }
     });
@@ -267,7 +267,7 @@ function confirmRemove(elem, title) {
             'confirm': {
                 text: 'Yes',
                 btnClass: 'btn-blue',
-                action: function() {
+                action: function () {
                     if (elem.length > 0) {
                         elem.remove();
                     }
@@ -281,7 +281,7 @@ function confirmRemove(elem, title) {
 }
 
 
-$(document).on('click', '.confirmDeleteAjax', function(event) {
+$(document).on('click', '.confirmDeleteAjax', function (event) {
     event.preventDefault();
     var _this = $(this);
     var title = _this.data('title');
@@ -297,7 +297,7 @@ $(document).on('click', '.confirmDeleteAjax', function(event) {
             'confirm': {
                 text: 'Yes',
                 btnClass: 'btn-blue',
-                action: function() {
+                action: function () {
                     $.ajax({
                         url: _this.attr('href'),
                         type: 'DELETE',
@@ -305,16 +305,16 @@ $(document).on('click', '.confirmDeleteAjax', function(event) {
                         headers: {
                             "accept": "application/json",
                         },
-                        beforeSend: function(xhr) {
+                        beforeSend: function (xhr) {
                             xhr.setRequestHeader('X-CSRF-Token', CLIENT_TOKEN);
                         },
-                        success: function(response) {
+                        success: function (response) {
                             if (response.status == true) {
                                 _this.closest('.deletedRow').remove();
                             }
                             wowMsg(response.message);
                         },
-                        complete: function() {},
+                        complete: function () { },
                     });
                 }
             },
@@ -325,7 +325,7 @@ $(document).on('click', '.confirmDeleteAjax', function(event) {
     });
 });
 
-$("#quickStartForm").submit(function(event) {
+$("#quickStartForm").submit(function (event) {
     event.preventDefault();
     l = Ladda.create(document.querySelector('.l-button'));
     l.start();
@@ -337,7 +337,7 @@ $("#quickStartForm").submit(function(event) {
         type: 'POST',
         data: form.serialize(),
         dataType: 'json',
-        success: function(responce) {
+        success: function (responce) {
             if (responce.status === true) {
                 form[0].reset();
                 $.alert({
@@ -347,7 +347,7 @@ $("#quickStartForm").submit(function(event) {
                     type: 'green',
                     theme: 'light',
                     buttons: {
-                        Okay: function() {
+                        Okay: function () {
                             window.location.reload(true);
                         }
                     }
@@ -360,7 +360,7 @@ $("#quickStartForm").submit(function(event) {
             l.stop();
 
         },
-        error: function(data) {
+        error: function (data) {
             var errors = data.responseJSON;
             //console.log(errors);
             $(".print-error-msg").find("ul").html('');
@@ -373,9 +373,9 @@ $("#quickStartForm").submit(function(event) {
 
 function printErrorMsg(msg) {
     var html = '';
-    $.each(msg, function(key, value) {
+    $.each(msg, function (key, value) {
         if (typeof value == 'object') {
-            $.each(value, function(key2, value2) {
+            $.each(value, function (key2, value2) {
                 html += '<li>' + value2 + '</li>';
             });
         } else {
@@ -387,9 +387,9 @@ function printErrorMsg(msg) {
 function ajaxerror(errors) {
     var alertErrs = '';
     console.log(errors);
-    if(errors != undefined){
-        $.each(errors, function(index, value) {
-            if(value[0] != undefined){
+    if (errors != undefined) {
+        $.each(errors, function (index, value) {
+            if (value[0] != undefined) {
                 alertErrs += value[0];
             }
         });
@@ -418,35 +418,35 @@ function removeURLParameter(url, parameter) {
 }
 
 
-function formErrorsflash(errors, formId){
+function formErrorsflash(errors, formId) {
     var html = '';
-    $.each(errors, function(key, value) {
+    $.each(errors, function (key, value) {
         if (typeof value == 'object') {
-            $.each(value, function(key2, value2) {
-                var element = $("#"+ formId + " input[name='"+key+"'], #"+formId+" textarea[name='"+key+"'], #"+formId+" select[name='"+key+"']" );
-                if(element.length == 0){
+            $.each(value, function (key2, value2) {
+                var element = $("#" + formId + " input[name='" + key + "'], #" + formId + " textarea[name='" + key + "'], #" + formId + " select[name='" + key + "']");
+                if (element.length == 0) {
                     var id = key.replace('.', '_').replace('.', '_');
-                    element = $("#"+ id);
+                    element = $("#" + id);
                 }
-                if(element.length == 0){
-                    element = $("#"+ formId + " input[name^='"+key+"'], #"+formId+" select[name^='"+key+"']" );
+                if (element.length == 0) {
+                    element = $("#" + formId + " input[name^='" + key + "'], #" + formId + " select[name^='" + key + "']");
                 }
                 console.log(element);
-                if(element.attr('type') == "radio"){
+                if (element.attr('type') == "radio") {
                     element.closest("div").addClass('is-invalid');
-                }else if(element.attr('type') == "checkbox"){
+                } else if (element.attr('type') == "checkbox") {
                     element.closest("div.checkbox-row").addClass('is-invalid');
-                }else{
+                } else {
                     element.addClass('is-invalid');
                 }
                 var erText = value2.replace('.', ' ');
                 element.closest(".form-group").find("span.invalid-feedback").html(erText);
             });
         } else {
-            var element = $("#"+ formId + " input[name='"+key+"'], # "+formId+" textarea[name='"+key+"']" );
-            if(element.attr('type') == "radio"){
+            var element = $("#" + formId + " input[name='" + key + "'], # " + formId + " textarea[name='" + key + "']");
+            if (element.attr('type') == "radio") {
                 element.closest("div").addClass('is-invalid');
-            }else{
+            } else {
                 element.addClass('is-invalid');
             }
             var erText = value.replace('.', '_');
@@ -454,26 +454,26 @@ function formErrorsflash(errors, formId){
         }
     });
 }
-$('#impRules li').on('click', function(e) {
+$('#impRules li').on('click', function (e) {
     e.preventDefault();
-      var _this = $(this);
-      var $temp = $("<input>");
-      $("body").append($temp);
-      $temp.val(_this.find('small').text().trim()).select();
-      document.execCommand("copy");
-      $temp.remove();
-      _this.append("<div class='copiedText'>Copied</div>");
-      setTimeout(() => _this.find(".copiedText").remove(), 1000);
-  })
+    var _this = $(this);
+    var $temp = $("<input>");
+    $("body").append($temp);
+    $temp.val(_this.find('small').text().trim()).select();
+    document.execCommand("copy");
+    $temp.remove();
+    _this.append("<div class='copiedText'>Copied</div>");
+    setTimeout(() => _this.find(".copiedText").remove(), 1000);
+})
 function DDMMYYYY(value, event) {
     let newValue = value.replace(/[^0-9]/g, '').replace(/(\..*)\./g, '$1');
-  
+
     const dayOrMonth = (index) => index % 2 === 1 && index < 4;
-  
+
     // on delete key.  
     if (!event.data) {
-      return value;
+        return value;
     }
     return newValue.split('').map((v, i) => dayOrMonth(i) ? v + '/' : v).join('');;
-  }
+}
 

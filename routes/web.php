@@ -18,7 +18,8 @@ Route::prefix('config')->group(function () {
         phpinfo();
         die;
     });
-
+    // https://chatplus.co.in/config/clear-cache
+    // http://127.0.0.1:8000/config/clear-cache
     Route::get('/clear-cache', function () {
         Artisan::call('cache:clear');
         Artisan::call('view:clear');

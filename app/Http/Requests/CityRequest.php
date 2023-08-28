@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use \Illuminate\Http\Request;
 
-class TagRequest extends FormRequest
+class CityRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,11 +25,8 @@ class TagRequest extends FormRequest
     public function rules(Request $request)
     {
         $rules = [];
-        if ($request->isMethod("PATCH") && is_numeric($request->segment(3))) {
-            $rule['name'] = 'required|unique:tags,name,' . $request->segment(3);
-        } else {
-            $rule['name'] = 'required|unique:tags,name';
-        }
+        $rules['state_id'] = 'required';
+        $rules['name'] = 'required';
         return $rules;
     }
 

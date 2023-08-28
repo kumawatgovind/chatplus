@@ -41,6 +41,7 @@ class User extends Authenticatable
         "janam_din",
         "gender",
         "marital_status",
+        "is_block",
         "email_verified_at",
         "password",
         'two_factor_secret',
@@ -176,7 +177,7 @@ class User extends Authenticatable
      */
     public function main_profile()
     {
-        return $this->belongsTo(\App\Models\User::class, 'parent_id');
+        return $this->belongsTo(User::class, 'parent_id');
     }
 
     /**
@@ -186,7 +187,7 @@ class User extends Authenticatable
      */
     public function userServicesProfile()
     {
-        return $this->hasOne(\App\Models\ServiceProfile::class, 'user_id', 'id');
+        return $this->hasOne(ServiceProfile::class, 'user_id', 'id');
     }
 
     /**
@@ -196,7 +197,7 @@ class User extends Authenticatable
      */
     public function serviceProduct()
     {
-        return $this->hasMany(\App\Models\ServiceProduct::class, 'user_id', 'id');
+        return $this->hasMany(ServiceProduct::class, 'user_id', 'id');
     }
 
     /**
@@ -206,7 +207,7 @@ class User extends Authenticatable
      */
     public function userSubscribe()
     {
-        return $this->hasMany(\App\Models\Subscription::class, 'user_id', 'id');
+        return $this->hasMany(Subscription::class, 'user_id', 'id');
     }
 
     /**
@@ -216,7 +217,7 @@ class User extends Authenticatable
      */
     public function userSponsor()
     {
-        return $this->hasMany(\App\Models\Sponsor::class, 'sponsor_user_id', 'id');
+        return $this->hasMany(Sponsor::class, 'sponsor_user_id', 'id');
     }
 
     /**
@@ -226,7 +227,7 @@ class User extends Authenticatable
      */
     public function userSponsored()
     {
-        return $this->hasMany(\App\Models\Sponsor::class, 'sponsored_user_id', 'id');
+        return $this->hasMany(Sponsor::class, 'sponsored_user_id', 'id');
     }
 
     /**
@@ -236,7 +237,7 @@ class User extends Authenticatable
      */
     public function userEarnings()
     {
-        return $this->hasMany(\App\Models\UserEarning::class, 'user_id', 'id');
+        return $this->hasMany(UserEarning::class, 'user_id', 'id');
     }
 
     /**
@@ -246,7 +247,7 @@ class User extends Authenticatable
      */
     public function userSubscription()
     {
-        return $this->hasOne(\App\Models\UserSubscription::class, 'user_id', 'id')->where('is_active', '=', 1);
+        return $this->hasOne(UserSubscription::class, 'user_id', 'id')->where('is_active', '=', 1);
     }
 
     /**
@@ -257,7 +258,10 @@ class User extends Authenticatable
     public function activeSubscription()
     {
         $date = date('Y-m-d H:i:s');
-        return $this->hasOne(\App\Models\UserSubscription::class, 'user_id', 'id')->where('start_date', '<=', $date)->where('end_date', '>=', $date);
+        return $this->hasOne(UserSubscription::class, 'user_id', 'id')
+        ->where('start_date', '<=', $date)
+        ->where('end_date', '>=', $date)
+        ->where('is_active', 1);
     }
 
     /**
@@ -267,7 +271,27 @@ class User extends Authenticatable
      */
     public function userStatus()
     {
-        return $this->hasMany(\App\Models\UserStatus::class, 'user_id', 'id');
+        return $this->hasMany(UserStatus::class, 'user_id', 'id');
+    }
+
+    /**
+     * kycDocument
+     *
+     * @return void
+     */
+    public function kycDocument()
+    {
+        return $this->hasMany(KycDocument::class, 'user_id', 'id');
+    }
+
+    /**
+     * contactSync
+     *
+     * @return void
+     */
+    public function contactSync()
+    {
+        return $this->hasMany(ContactSync::class, 'user_id', 'id');
     }
 
     /**
@@ -277,7 +301,27 @@ class User extends Authenticatable
      */
     public function reportedUser()
     {
-        return $this->hasOne(\App\Models\ReportedSpam::class, 'item_id', 'id')->where('type', '=', 1);
+        return $this->hasOne(ReportedSpam::class, 'item_id', 'id')->where('type', '=', 1);
+    }
+
+    /**
+     * userProduct
+     *
+     * @return void
+     */
+    public function userProduct()
+    {
+        return $this->hasMany(Product::class, 'user_id', 'id');
+    }
+
+    /**
+     * userCustomer
+     *
+     * @return void
+     */
+    public function userCustomer()
+    {
+        return $this->hasMany(Customer::class, 'user_id', 'id');
     }
 
     /**
@@ -287,7 +331,7 @@ class User extends Authenticatable
      */
     public function reportedByUser()
     {
-        return $this->belongsTo(\App\Models\ReportedSpam::class, 'reported_by');
+        return $this->belongsTo(ReportedSpam::class, 'reported_by');
     }
 
 
@@ -312,9 +356,9 @@ class User extends Authenticatable
     {
         if (!empty($keyword)) {
             $query->where(function ($query) use ($keyword) {
-                $query->where('name', 'LIKE', '%' . $keyword . '%');
-                $query->orWhere('email', 'LIKE', '%' . $keyword . '%');
-                $query->orWhere('phone_number', 'LIKE', '%' . $keyword . '%');
+                $query->where('users.name', 'LIKE', '%' . $keyword . '%');
+                $query->orWhere('users.email', 'LIKE', '%' . $keyword . '%');
+                $query->orWhere('users.phone_number', 'LIKE', '%' . $keyword . '%');
             });
         }
         return $query;

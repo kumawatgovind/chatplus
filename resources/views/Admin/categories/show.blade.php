@@ -3,11 +3,11 @@
   <!-- Content Header (Category header) -->
   <x-slot name="breadcrumb">
     <div class="row mb-2">
-      <div class="col-sm-6">
-        <h1>Admin Service Manager</h1>
+      <div class="col-sm-12">
+        <h1>Service Category Manager</h1>
       </div>
-      <div class="col-sm-6">
-        {{ Breadcrumbs::render('common',['append' => [['label'=> $getController,'route'=> 'admin.categories.index'],['label' => 'View  Service Detail']]]) }}
+      <div class="col-sm-12">
+        {{ Breadcrumbs::render('common',['append' => [['label'=> 'Service Category','route'=> 'admin.categories.index'],['label' => 'View Category Detail']]]) }}
       </div>
     </div>
   </x-slot>
@@ -18,11 +18,9 @@
       <div class="col-md-12">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">Admin Service Manager</h3>
-
+            <h3 class="card-title">Service Category Manager</h3>
             <div class="card-tools">
               <a href="{{ route('admin.categories.index') }}" class="btn btn-default pull-right" title="Back"><i class="fa fa-fw fa-chevron-circle-left"></i> Back</a>
-
             </div>
           </div>
           <!-- /.card-header -->

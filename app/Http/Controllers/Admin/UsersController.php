@@ -143,6 +143,7 @@ class UsersController extends Controller
             $user = User::findOrFail($id);
             $requestData = $request->all();
             $requestData['status'] = (isset($requestData['status'])) ? 1 : 0;
+            $requestData['is_block'] = (isset($requestData['is_block'])) ? 1 : 0;
             $user->fill($requestData);
             $user->save();
         } catch (\Illuminate\Database\QueryException $e) {
@@ -159,26 +160,22 @@ class UsersController extends Controller
      */
     public function destroy(User $user)
     {
-        $response = Gate::inspect('check-user', "users-create");
-        if (!$response->allowed()) {
-            return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
-        }
+        $response = [];
+        // $response = Gate::inspect('check-user', "users-create");
+        // if (!$response->allowed()) {
+        //     return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
+        // }
         DB::beginTransaction();
         try {
             $userData = User::findOrFail($user->id);
-            if ($user->is_subscribed == 1) {
-                $type = 'advertisers';
-            } else {
-                $type = 'customers';
-            }
             $user->delete();
             DB::commit();
-            $responce = ['status' => true, 'message' => 'This ' . Str::ucfirst($type) . ' has been deleted successfully.', 'data' => $user];
+            $response = ['status' => true, 'message' => 'User has been deleted successfully.', 'data' => $user];
         } catch (\Exception $e) {
             DB::rollBack();
-            $responce = ['status' => false, 'message' => $e->getMessage()];
+            $response = ['status' => false, 'message' => $e->getMessage()];
         }
-        return $responce;
+        return $response;
     }
 
 

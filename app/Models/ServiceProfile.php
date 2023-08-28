@@ -23,9 +23,12 @@ class ServiceProfile extends Model
         "street_name",
         "building_name",
         'pin_code',
-        'city',
-        'state',
-        'locality',
+        "locality_id",
+        "city_id",
+        "state_id",
+        "locality",
+        "city",
+        "state",
         'website',
         'description',
         'latitude',
@@ -117,6 +120,52 @@ class ServiceProfile extends Model
         return $this->belongsTo(\App\Models\Category::class);
     }
 
+    /**
+     * state
+     *
+     * @return void
+     */
+    public function state()
+    {
+        return $this->belongsTo(State::class, 'state_id');
+    } 
+
+    /**
+     * city
+     *
+     * @return void
+     */
+    public function city()
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    /**
+     * locality
+     *
+     * @return void
+     */
+    public function locality()
+    {
+        return $this->belongsTo(Locality::class, 'locality_id');
+    } 
+
+    /**
+     * scopeFilter
+     *
+     * @param  mixed $query
+     * @param  mixed $keyword
+     * @return void
+     */
+    public function scopeFilter($query, $keyword)
+    {
+        if (!empty($keyword)) {
+            $query->where('service_name', 'LIKE', '%' . $keyword . '%');
+            $query->orWhere('contact_person', 'LIKE', '%' . $keyword . '%');
+            $query->orWhere('mobile_number', 'LIKE', '%' . $keyword . '%');
+        }
+        return $query;
+    }
 
     /**
      * scopeUserFilter

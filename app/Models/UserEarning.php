@@ -17,9 +17,12 @@ class UserEarning extends Model
      */
     protected $fillable = [
         "user_id",
+        "sponsor_id",
         "earning",
         "subscription_price",
         "admin_earning",
+        "withdrawal",
+        "type",
     ];
 
     /**
@@ -43,6 +46,16 @@ class UserEarning extends Model
      */
     public function user()
     {
-        return $this->belongsTo(\App\Models\User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * user
+     *
+     * @return void
+     */
+    public function sponsor()
+    {
+        return $this->belongsTo(Sponsor::class, 'sponsor_id');
     }
 }

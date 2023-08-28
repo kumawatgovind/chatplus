@@ -39,7 +39,47 @@ class ServiceProductsController extends Controller
             // if ($validator->fails()) {
             //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             // }
-            if ($serviceProduct = ServiceProductRepository::create($request)) {
+            if ($serviceProduct = ServiceProductRepository::createUpdate($request)) {
+                $postResponse = ServiceProductRepository::getSingle($serviceProduct->id, $user);
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('post_save');
+                $data['data'] = $postResponse;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        } catch (Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+    /**
+     * updateServiceProduct
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public static function updateServiceProduct(Request $request)
+    {
+        $data = [];
+        try {
+            $user = $request->get('Auth');
+            // dd($request->all());
+            $validator = (object) Validator::make($request->all(), [
+                'service_id' => 'required',
+            ]);
+            if ($validator->fails()) {
+                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            }
+            if ($serviceProduct = ServiceProductRepository::createUpdate($request)) {
                 $postResponse = ServiceProductRepository::getSingle($serviceProduct->id, $user);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');

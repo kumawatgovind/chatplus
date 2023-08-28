@@ -1,10 +1,12 @@
 <?php
+
 use Illuminate\Support\Str;
+
 $title = "User Manager";
 $add = "User";
 ?>
 <x-layouts.admin>
-@section('title', $title)
+  @section('title', $title)
   <!-- Content Header (Customers header) -->
   <x-slot name="breadcrumb">
     <div class="row mb-2">
@@ -43,7 +45,7 @@ $add = "User";
                 <div class="col-md-6">
                   <div class="form-group required {{ $errors->has('name') ? 'has-error' : '' }}">
                     <label for="name">Name</label>
-                    {{ Form::text('name', old('name'), ['class' => 'form-control','placeholder' => 'Name']) }}
+                    {{ Form::text('name', old('name'), ['class' => 'form-control','placeholder' => 'Name', 'readonly' => true]) }}
                     @if($errors->has('name'))
                     <span class="help-block">{{ $errors->first('name') }}</span>
                     @endif
@@ -90,46 +92,61 @@ $add = "User";
                 </div>
               </div>
               <div class="row">
-                 <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="chk-container">Is Active
-                        @if(isset($user))
-                        @if($user->status == 1)
-                        <input name="status" type="checkbox" checked="checked">
-                        @else
-                        <input name="status" type="checkbox">
-                        @endif
-                        @else
-                        <input name="status" type="checkbox" checked="checked">
-                        @endif
-                        <span class="checkmark"></span>
-                      </label>
-                    </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="chk-container">Is Active
+                      @if(isset($user))
+                      @if($user->status == 1)
+                      <input name="status" type="checkbox" checked="checked">
+                      @else
+                      <input name="status" type="checkbox">
+                      @endif
+                      @else
+                      <input name="status" type="checkbox" checked="checked">
+                      @endif
+                      <span class="checkmark"></span>
+                    </label>
                   </div>
+                </div>
+                <div class="form-group">
+                  <label class="chk-container">Is Block
+                    @if(isset($user))
+                    @if($user->is_block == 1)
+                    <input name="is_block" type="checkbox" checked="checked">
+                    @else
+                    <input name="is_block" type="checkbox">
+                    @endif
+                    @else
+                    <input name="is_block" type="checkbox" checked="checked">
+                    @endif
+                    <span class="checkmark"></span>
+                  </label>
+                </div>
               </div>
+            </div>
 
-            </div><!-- /.box-body -->
-          </div>
-          <!-- /.card-body -->
-          <div class="card-footer">
-            <button class="btn btn-primary btn-flat submit-form" title="Submit" type="submit"><i class="fa fa-fw fa-save"></i> Submit</button>
-            <a href="{{ route('admin.users.index') }}" class="btn btn-warning btn-flat" title="Cancel"><i class="fa fa-fw fa-chevron-circle-left"></i> Back</a>
-          </div>
-          {{ Form::close() }}
+          </div><!-- /.box-body -->
         </div>
-        <!-- /.card -->
+        <!-- /.card-body -->
+        <div class="card-footer">
+          <button class="btn btn-primary btn-flat submit-form" title="Submit" type="submit"><i class="fa fa-fw fa-save"></i> Submit</button>
+          <a href="{{ route('admin.users.index') }}" class="btn btn-warning btn-flat" title="Cancel"><i class="fa fa-fw fa-chevron-circle-left"></i> Back</a>
+        </div>
+        {{ Form::close() }}
       </div>
-      <!-- /.col -->
+      <!-- /.card -->
+    </div>
+    <!-- /.col -->
     </div>
     <!-- /.content -->
     @push('scripts')
     <script type="text/javascript">
-        $(document).ready(function () {   
-            $("form").submit(function( event ) {
-                $('.submit-form').attr('disabled', 'disabled');
-            });
+      $(document).ready(function() {
+        $("form").submit(function(event) {
+          $('.submit-form').attr('disabled', 'disabled');
         });
-    </script>  
+      });
+    </script>
     @endpush
   </x-slot>
 </x-layouts.admin>

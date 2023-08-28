@@ -17,8 +17,11 @@
         }
 
         img {
-            width: 100%;
-            height: 520px;
+            width: 60%;
+            height: 500px;
+            margin: 0 auto;
+            text-align: center;
+            display: block;
         }
     </style>
 </head>

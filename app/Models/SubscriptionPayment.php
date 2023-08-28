@@ -12,6 +12,7 @@ class SubscriptionPayment extends Model
         "transaction_id",
         "stripe_customer_id",
         "user_id",
+        "sponsor_id",
         "user_subscription_id",
         "subscription_price",
         "payment_intent_id",

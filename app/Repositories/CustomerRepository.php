@@ -13,7 +13,7 @@ class CustomerRepository
 {
 
     /**
-     * getSingle
+     * create
      *
      * @param  mixed $request
      * @return obj
@@ -27,8 +27,9 @@ class CustomerRepository
             $customer->user_id = $authUser->id;
             $customer->name = $request->input('name', false);
             $customer->contact_number = $request->input('contact_number', false);
-            $customer->city = $request->input('city', false);
-            $customer->locality = $request->input('locality', false);
+            $customer->state_id = $request->input('state_id', false);
+            $customer->city_id = $request->input('city_id', false);
+            $customer->locality_id = $request->input('locality_id', false);
             $customer->description = $request->input('description', false);
             $customer->latitude = $request->input('latitude', false);
             $customer->longitude = $request->input('longitude', false);
@@ -44,7 +45,13 @@ class CustomerRepository
             return false;
         }
     }
-
+    
+    /**
+     * update
+     *
+     * @param  mixed $request
+     * @return void
+     */
     public static function update(Request $request)
     {
         DB::beginTransaction();
@@ -57,11 +64,14 @@ class CustomerRepository
             if ($request->input('contact_number', false)) {
                 $update['contact_number'] = $request->input('contact_number', false);
             }
-            if ($request->input('city', false)) {
-                $update['city'] = $request->input('city', false);
+            if ($request->input('state_id', false)) {
+                $update['state_id'] = $request->input('state_id', false);
             }
-            if ($request->input('locality', false)) {
-                $update['locality'] = $request->input('locality', false);
+            if ($request->input('city_id', false)) {
+                $update['city_id'] = $request->input('city_id', false);
+            }
+            if ($request->input('locality_id', false)) {
+                $update['locality_id'] = $request->input('locality_id', false);
             }
             if ($request->input('description', false)) {
                 $update['description'] = $request->input('description', false);
@@ -94,9 +104,27 @@ class CustomerRepository
     {
         $query = Customer::status()
             ->with([
-                'user',
-                'user.userServicesProfile',
-                'user.userServicesProfile.serviceImages'
+                'state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users',
+                'users.userServicesProfile',
+                'users.userServicesProfile.serviceImages',
+                'users.userServicesProfile.state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
             ]);
 
         $query = $query->where('id', $customerId);
@@ -121,6 +149,8 @@ class CustomerRepository
      */
     public static function list(Request $request)
     {
+        $authUser = $request->get('Auth');
+        $userId = $authUser->id;
         if ($request->input('limit', false)) {
             $limit  = $request->input('limit', 0);
         } else {
@@ -128,12 +158,32 @@ class CustomerRepository
         }
         $query = Customer::status()
             ->with([
-                'user',
-                'user.userServicesProfile',
-                'user.userServicesProfile.serviceImages'
+                'state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users',
+                'users.userServicesProfile',
+                'users.userServicesProfile.serviceImages',
+                'users.userServicesProfile.state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.locality' => function ($q) {
+                    $q->select('id', 'name');
+                }
             ]);
         if ($request->input('user_id', false)) {
             $query = $query->where('user_id', $request->input('user_id', false));
+        } else {
+            $query = $query->where('user_id', $userId);
         }
         $customers = $query->orderBy('id', 'desc')->paginate($limit);
         if (!empty($customers)) {

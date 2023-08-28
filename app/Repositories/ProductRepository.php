@@ -28,8 +28,11 @@ class ProductRepository
             $product = new Product();
             $product->user_id = $authUser->id;
             $product->title = $request->input('title', false);
-            $product->locality = $request->input('locality', false);
-            $product->city = $request->input('city', false);
+            // $product->locality = $request->input('locality', false);
+            // $product->city = $request->input('city', false);
+            $product->locality_id = $request->input('locality_id', 0);
+            $product->city_id = $request->input('city_id', 0);
+            $product->state_id = $request->input('state_id', 0);
             $product->address = $request->input('address', false);
             $product->price = $request->input('price', false);
             $product->description = $request->input('description', false);
@@ -57,6 +60,7 @@ class ProductRepository
                 return false;
             }
         } catch (Exception $e) {
+            dd($e->getMessage());
             DB::rollBack();
             return false;
         }
@@ -66,16 +70,20 @@ class ProductRepository
     {
         DB::beginTransaction();
         try {
+            $update = [];
             $authUser = $request->get('Auth');
             $productId = $request->input('product_id', false);
             if ($request->input('title', false)) {
                 $update['title'] = $request->input('title', false);
             }
-            if ($request->input('locality', false)) {
-                $update['locality'] = $request->input('locality', false);
+            if ($request->input('locality_id', false)) {
+                $update['locality_id'] = $request->input('locality_id', false);
             }
-            if ($request->input('city', false)) {
-                $update['city'] = $request->input('city', false);
+            if ($request->input('city_id', false)) {
+                $update['city_id'] = $request->input('city_id', false);
+            }
+            if ($request->input('state_id', false)) {
+                $update['state_id'] = $request->input('state_id', false);
             }
             if ($request->input('address', false)) {
                 $update['address'] = $request->input('address', false);
@@ -131,10 +139,28 @@ class ProductRepository
     {
         $query = Product::status()
             ->with([
+                'state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
                 'productImage',
-                'user',
-                'user.userServicesProfile',
-                'user.userServicesProfile.serviceImages'
+                'users',
+                'users.userServicesProfile',
+                'users.userServicesProfile.serviceImages',
+                'users.userServicesProfile.state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
             ]);
 
         $query = $query->where('id', $productId);
@@ -167,6 +193,8 @@ class ProductRepository
      */
     public static function list(Request $request)
     {
+        $authUser = $request->get('Auth');
+        $userId = $authUser->id;
         if ($request->input('limit', false)) {
             $limit  = $request->input('limit', 0);
         } else {
@@ -175,12 +203,32 @@ class ProductRepository
         $query = Product::status()
             ->with([
                 'productImage',
-                'user',
-                'user.userServicesProfile',
-                'user.userServicesProfile.serviceImages'
+                'users',
+                'state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile',
+                'users.userServicesProfile.serviceImages',
+                'users.userServicesProfile.state' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.city' => function ($q) {
+                    $q->select('id', 'name');
+                },
+                'users.userServicesProfile.locality' => function ($q) {
+                    $q->select('id', 'name');
+                },
             ]);
         if ($request->input('user_id', false)) {
             $query = $query->where('user_id', $request->input('user_id', false));
+        } else {
+            $query = $query->where('user_id', $userId);
         }
         $products = $query->orderBy('id', 'desc')->paginate($limit);
         if (!empty($products)) {

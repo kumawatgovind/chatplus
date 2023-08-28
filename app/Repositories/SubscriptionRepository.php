@@ -7,6 +7,8 @@ use App\Models\UserSubscription;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
+use App\Models\Sponsor;
+use App\Models\UserEarning;
 use Illuminate\Http\Request;
 use PSpell\Config;
 
@@ -58,7 +60,7 @@ class SubscriptionRepository
      * @param  mixed $request
      * @return obj
      */
-    public static function userSubscribe($subscriptionId = 0, $authUserId = 0)
+    public static function userSubscribe($subscriptionId = 0, $authUserId = 0, $sponsorId = 0)
     {
         if ($subscriptionId > 0) {
             $subscriptionPlan = Subscription::where('id', $subscriptionId)->status()->first();
@@ -77,6 +79,7 @@ class SubscriptionRepository
                     $subscriptionPaymentObj->transaction_id = uniqid();
                     $subscriptionPaymentObj->stripe_customer_id = $paymentIntents['customer_id'];
                     $subscriptionPaymentObj->user_id = $authUserId;
+                    $subscriptionPaymentObj->sponsor_id = $sponsorId;
                     $subscriptionPaymentObj->user_subscription_id = $userSubscriptionId;
                     $subscriptionPaymentObj->subscription_price = $subscriptionPlan->price;
                     $subscriptionPaymentObj->payment_status = 'inProgress';
@@ -115,19 +118,19 @@ class SubscriptionRepository
      */
     public static function paymentRequest(Request $request)
     {
-        if (in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1'])) {
-            return "On local environment payment not allowed";
-        }
+        // if (in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1'])) {
+        //     return "On local environment payment not allowed";
+        // }
 
         $authUserId = $request->get('Auth')->id;
         $checkUserSubscribe = self::checkUserSubscribe($authUserId);
-        $authUserId = $request->get('Auth')->id;
         $subscription = self::getSingle($request);
         $subscriptionId = $subscription->id;
+        $sponsorId = $request->input('sponsor_id', false);
         // if (!empty($checkUserSubscribe) && $checkUserSubscribe->active_subscription_count > 0) {
         //     $userSubscribe = $checkUserSubscribe->activeSubscription;
         // } else {
-        $userSubscribe = self::userSubscribe($subscriptionId, $authUserId);
+        $userSubscribe = self::userSubscribe($subscriptionId, $authUserId, $sponsorId);
         // }
 
         // return the request token
@@ -189,6 +192,13 @@ class SubscriptionRepository
                     $subscriptionPaymentDetail->is_payment = 1;
                     $subscriptionPaymentDetail->payment_status = $paymentStatus;
                     $subscriptionPaymentDetail->save();
+                    $sponsorId = $subscriptionPaymentDetail->sponsor_id;
+                    Sponsor::where('id', $sponsorId)->update(['status' => 1]);
+                    UserEarning::where('sponsor_id', $sponsorId)->update(['status' => 1]);
+                    UserSubscription::where([
+                        'id', $subscriptionPaymentDetail->user_subscription_id,
+                        'user_id', $subscriptionPaymentDetail->user_id,
+                        ])->update(['is_active' => 1]);
                     $responseData['payment_status'] = 'Completed';
                     $responseData['data_message'] = 'Payment successfully completed';
                     break;
@@ -196,6 +206,13 @@ class SubscriptionRepository
                     $subscriptionPaymentDetail->payment_status = $paymentStatus;
                     $subscriptionPaymentDetail->is_payment = 0;
                     $subscriptionPaymentDetail->save();
+                    $sponsorId = $subscriptionPaymentDetail->sponsor_id;
+                    Sponsor::where('id', $sponsorId)->delete();
+                    UserEarning::where('sponsor_id', $sponsorId)->delete();
+                    UserSubscription::where([
+                        'id', $subscriptionPaymentDetail->user_subscription_id,
+                        'user_id', $subscriptionPaymentDetail->user_id,
+                        ])->delete();
                     $responseData['payment_status'] = 'Canceled';
                     $responseData['data_message'] = 'Payment Canceled';
                     break;
@@ -204,6 +221,13 @@ class SubscriptionRepository
                     $subscriptionPaymentDetail->payment_status = $paymentStatus;
                     $subscriptionPaymentDetail->is_payment = 0;
                     $subscriptionPaymentDetail->save();
+                    $sponsorId = $subscriptionPaymentDetail->sponsor_id;
+                    Sponsor::where('id', $sponsorId)->delete();
+                    UserEarning::where('sponsor_id', $sponsorId)->delete();
+                    UserSubscription::where([
+                        'id', $subscriptionPaymentDetail->user_subscription_id,
+                        'user_id', $subscriptionPaymentDetail->user_id,
+                        ])->delete();
                     $responseData['payment_status'] = 'Failed';
                     $responseData['data_message'] = $errorMessage;
                     break;
@@ -219,5 +243,31 @@ class SubscriptionRepository
             $responseData['data_message'] = 'Something went wrong.';
         }
         return $responseData;
+    }
+
+    
+     /**
+     * paymentRequest
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public static function payoutRequest(Request $request)
+    {
+        try {
+            // if (in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1'])) {
+            //     return "On local environment payout not allowed";
+            // }
+            $authUserId = $request->get('Auth')->id;
+            $responseData['earning'] = 0;
+            $responseData['user_id'] = $authUserId;
+            $responseData['admin_earning'] = 0;
+            $responseData['type'] = 2;
+            $responseData['withdrawal'] = $request->input('payout_amount', false);
+            return UserEarning::insert($responseData);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return false;
+        }
     }
 }
