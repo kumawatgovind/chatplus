@@ -155,6 +155,7 @@ class LocalitiesController extends Controller
         $request->validate([
             'state_id' => 'required',
             'city_id' => 'required',
+            'import' => 'required|max:10000|mimes:xls,xlsx'
         ]); 
         $cityId = $request->input('city_id', 0);
         $targetPath = $request->file('import')->store('files');

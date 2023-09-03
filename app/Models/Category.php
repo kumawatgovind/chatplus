@@ -110,9 +110,7 @@ class Category extends Model
     public function scopeFilter($query, $keyword)
     {
         if (!empty($keyword)) {
-            $query->where(function ($query) use ($keyword) {
-                $query->where('name', 'LIKE', '%' . $keyword . '%');
-            });
+            $query->where('name', 'LIKE', '%' . $keyword . '%');
         }
         return $query;
     }

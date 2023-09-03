@@ -4,10 +4,10 @@
   <x-slot name="breadcrumb">
     <div class="row mb-2">
       <div class="col-sm-12">
-        <h1>Service Category Manager</h1>
+        <h1>Service Manager</h1>
       </div>
       <div class="col-sm-12">
-        {{ Breadcrumbs::render('common',['append' => [['label'=> 'Service Category','route'=> 'admin.categories.index'],['label' => 'View Category Detail']]]) }}
+        {{ Breadcrumbs::render('common',['append' => [['label'=> 'Service Manager','route'=> 'admin.categories.index'],['label' => 'View Service Detail']]]) }}
       </div>
     </div>
   </x-slot>
@@ -18,7 +18,7 @@
       <div class="col-md-12">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">Service Category Manager</h3>
+            <h3 class="card-title">Service Manager</h3>
             <div class="card-tools">
               <a href="{{ route('admin.categories.index') }}" class="btn btn-default pull-right" title="Back"><i class="fa fa-fw fa-chevron-circle-left"></i> Back</a>
             </div>
@@ -38,7 +38,7 @@
               @endif
               @if($category->parent)
               <tr>
-                <th scope="row">{{ __('Parent Category') }}</th>
+                <th scope="row">{{ __('Parent Service') }}</th>
                 <td>{{ $category->parent->name }}</td>
               </tr>
               @endif

@@ -138,7 +138,7 @@
                 <!-- small box -->
                 <div class="small-box bg-danger">
                     <div class="inner">
-                        <h3>{{ $payoutMonthTotal }}</h3>
+                        <h3>{{ $kycPendingTotal }}</h3>
                         <p>Pending Kyc</p>
                     </div>
                     <div class="icon">
@@ -150,7 +150,7 @@
                 <!-- small box -->
                 <div class="small-box bg-info">
                     <div class="inner">
-                        <h3>{{ $payoutTotal }}</h3>
+                        <h3>{{ $kycFailedTotal }}</h3>
                         <p>Failed kyc</p>
                     </div>
                     <div class="icon">
@@ -162,7 +162,7 @@
                 <!-- small box -->
                 <div class="small-box bg-success">
                     <div class="inner">
-                        <h3>{{ $payoutWeeklyTotal }}</h3>
+                        <h3>{{ $kycTotal }}</h3>
                         <p>Total Kyc</p>
                     </div>
                     <div class="icon">

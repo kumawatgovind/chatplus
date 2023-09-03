@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\ReferralSystem;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
+use App\Models\KycDocument;
 use App\Traits\ApiGlobalFunctions;
 use Illuminate\Http\Request;
 use App\Repositories\SubscriptionRepository;
@@ -238,6 +239,7 @@ class SubscriptionsController extends Controller
         $minimumPayout = config('constants.MINIMUM_PAYOUT');
         $data = [];
         try {
+            $authUser = $request->get('Auth');
             $validator = (object) Validator::make($request->all(), [
                 'payout_amount' => 'nullable',
             ]);
@@ -245,27 +247,39 @@ class SubscriptionsController extends Controller
                 return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             }
             $payoutAmount = $request->input('payout_amount', 0);
-            if ($payoutAmount >= $minimumPayout) {
-                $totalTransaction = SponsorRepository::getTransactionHistory($request);
-                if ($totalTransaction['total_remaining'] > $payoutAmount) {
-                    $payoutContact = RazorPayRepository::createPayoutContact($request);
-                    extract($payoutContact);
-                    if ($contactStatus) {
-                        $payoutFundAccount = RazorPayRepository::createPayoutFundAccount($request, $contactData);
-                        extract($payoutFundAccount);
-                        if ($accountStatus) {
-                            $payout = RazorPayRepository::createPayout($request, $fundData);
-                            extract($payout);
-                            if ($payoutStatus) {
-                                if ($payoutRequest = SubscriptionRepository::payoutRequest($request)) {
-                                    $data['status'] = true;
-                                    $data['code'] = config('response.HTTP_OK');
-                                    $data['message'] = ApiGlobalFunctions::messageDefault('payout_success');
-                                    $data['data'] = $payoutRequest;
+            $kycDocument = KycDocument::where([
+                'user_id' => $authUser->id,
+                'is_default' => 1,
+                'is_kyc' => 1,
+                ])->first();
+            if (!empty($kycDocument)) {
+                if ($payoutAmount >= $minimumPayout) {
+                    $totalTransaction = SponsorRepository::getTransactionHistory($request);
+                    $totalTransaction = $totalTransaction['dataTransaction'];
+                    if (!empty($totalTransaction) && $totalTransaction['total_remaining'] > $payoutAmount) {
+                        $payoutContact = RazorPayRepository::createPayoutContact($request);
+                        extract($payoutContact);
+                        if ($contactStatus) {
+                            $payoutFundAccount = RazorPayRepository::createPayoutFundAccount($request, $contactData);
+                            extract($payoutFundAccount);
+                            if ($accountStatus) {
+                                $payout = RazorPayRepository::createPayout($request, $fundData);
+                                extract($payout);
+                                if ($payoutStatus) {
+                                    if ($payoutRequest = SubscriptionRepository::payoutRequest($request)) {
+                                        $data['status'] = true;
+                                        $data['code'] = config('response.HTTP_OK');
+                                        $data['message'] = ApiGlobalFunctions::messageDefault('payout_success');
+                                        $data['data'] = $payoutRequest;
+                                    } else {
+                                        $data['status'] = false;
+                                        $data['code'] = config('response.HTTP_OK');
+                                        $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+                                    }
                                 } else {
                                     $data['status'] = false;
                                     $data['code'] = config('response.HTTP_OK');
-                                    $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+                                    $data['message'] = $error;
                                 }
                             } else {
                                 $data['status'] = false;
@@ -280,17 +294,17 @@ class SubscriptionsController extends Controller
                     } else {
                         $data['status'] = false;
                         $data['code'] = config('response.HTTP_OK');
-                        $data['message'] = $error;
+                        $data['message'] = sprintf(ApiGlobalFunctions::messageDefault('payout_amount_not_available'), number_format($totalTransaction['total_remaining'], 2));
                     }
                 } else {
                     $data['status'] = false;
                     $data['code'] = config('response.HTTP_OK');
-                    $data['message'] = sprintf(ApiGlobalFunctions::messageDefault('payout_amount_not_available'), $totalTransaction['total_remaining']);
+                    $data['message'] = sprintf(ApiGlobalFunctions::messageDefault('payout_minimum_not_available'), number_format($minimumPayout, 2));
                 }
             } else {
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
-                $data['message'] = sprintf(ApiGlobalFunctions::messageDefault('payout_minimum_not_available'), $minimumPayout);
+                $data['message'] = ApiGlobalFunctions::messageDefault('update_kyc');
             }
         } catch (\Exception $e) {
             $data['status'] = false;

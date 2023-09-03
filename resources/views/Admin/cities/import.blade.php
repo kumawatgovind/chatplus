@@ -41,14 +41,14 @@ $add = "Import Citites";
                     <span class="help-block">{{ $errors->first('state_id') }}</span>
                     @endif
                   </div>
-                  <div class="form-group">
+                  <div class="form-group required {{ $errors->has('import') ? 'has-error' : '' }}">
                     <label for="importFile">Import File</label>
                     <div class="input-group">
-                      <div class="custom-file">
-                        <input type="file" class="custom-file-input" name="import" id="importFile">
-                        <label class="custom-file-label" for="importFile">Choose file</label>
-                      </div>
+                        <input type="file" class="form-control" name="import" id="importFile">
                     </div>
+                    @if($errors->has('import'))
+                    <span class="help-block">{{ $errors->first('import') }}</span>
+                    @endif
                   </div>
 
                 </div>

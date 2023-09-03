@@ -57,6 +57,7 @@ $title = "List total Kyc users";
                   <th scope="col">Member Since</th>
                   <th scope="col" width="10%">Status</th>
                   <th scope="col">Kyc Date</th>
+                  <th scope="col">Action</th>
                 </tr>
               </thead>
               @if($users->count() > 0)
@@ -80,6 +81,11 @@ $title = "List total Kyc users";
                     @endif
                   </td>
                   <td>{{ $user->kyc_done ? date(config('get.ADMIN_DATE_FORMAT'), strtotime($user->kyc_done)) : 'Not Available' }}</td>
+                  <td>
+                  @if(!empty($user->kyc_document_id) && $user->is_kyc != 1)
+                  <a href="{{ route('admin.getSingleKyc',$user->kyc_document_id) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit Kyc" title="Edit Kyc" data-original-title="Edit"><i class="fa fa-edit"></i></a>
+                  @endif
+                  </td>
                 </tr>
                 @php
                 $i++;

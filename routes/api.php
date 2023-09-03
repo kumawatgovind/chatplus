@@ -28,9 +28,12 @@ Route::group(['namespace' => 'Api\V1', 'as' => 'api.', 'middleware' => ['api.hea
   Route::post('/check-phone-number', [UsersController::class, 'checkPhoneNumber']);
   Route::post('/check-username', [UsersController::class, 'checkUsername']);
   Route::post('/register', [UsersController::class, 'register']);
-
+  
+  
   // File Upload
   Route::post('/upload-document', [CommonController::class, 'uploadDocument']);
+  Route::post('/check-notification', [CommonController::class, 'checkNotification']);
+
 
   Route::group(['middleware' => ['api.header', 'api.authToken']], function () {
 
@@ -62,8 +65,9 @@ Route::group(['namespace' => 'Api\V1', 'as' => 'api.', 'middleware' => ['api.hea
     Route::post('/get-locality', [CommonController::class, 'getLocality']);
     Route::post('/add-recent-search', [CommonController::class, 'addRecentSearch']);
     Route::post('/get-recent-search', [CommonController::class, 'getRecentSearch']);
+    Route::get('/page-list', [CommonController::class, 'pageList']);
     Route::get('/page/{slug}', [CommonController::class, 'getPage']);
-
+    
     // Kyc Routes
     Route::post('/add-kyc', [KycController::class, 'addKyc']);
     Route::get('/get-kyc', [KycController::class, 'getKyc']);

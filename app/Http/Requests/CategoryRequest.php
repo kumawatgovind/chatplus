@@ -25,11 +25,12 @@ class CategoryRequest extends FormRequest
     public function rules(Request $request)
     {
         $rules  =   [
-            'title' => 'required|min:2|max:100|unique:categories',
+            'name' => 'required|min:2|max:50|unique:categories',
         ];
         if ($request->isMethod("PATCH") && is_numeric($request->segment(3))) {
-            $rules['title'] = 'required|min:2|max:100|unique:categories,title,' . $request->segment(3);
+            $rules['name'] = 'required|min:2|max:50|unique:categories,name,' . $request->segment(3);
         }
+        $rules['icon'] = 'required|mimes:jpg,png';
         return $rules;
     }
 
@@ -42,8 +43,8 @@ class CategoryRequest extends FormRequest
     public function messages()
     {
         return [
-            'title.required'  => 'Please enter title!',
-            'title.min'  => 'Title must be at least 2 characters long!',
+            'name.required'  => 'Please enter name!',
+            'name.min'  => 'Name must be at least 2 characters long!',
 
         ];
     }

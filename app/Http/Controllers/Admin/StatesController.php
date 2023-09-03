@@ -160,6 +160,9 @@ class StatesController extends Controller
      */
     public function import(Request $request)
     {
+        $request->validate([
+            'import' => 'required|max:10000|mimes:xls,xlsx'
+        ]); 
         $targetPath = $request->file('import')->store('files');
         $sPath = storage_path('app');
         $filePath = $sPath.'/'.$targetPath;

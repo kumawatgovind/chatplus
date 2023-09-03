@@ -51,6 +51,18 @@ class DashboardController extends Controller
 
         $payoutTodayTotal = $payoutWeeklyTotal = $payoutMonthTotal =  $payoutTotal = 0;
 
+        /* KYC Document */
+        $kycStatus = config('constants.KYC_STATUS');
+        $kycFailedTotal = $userQuery->whereHas('kycDocument', function ($q) {
+                            $q->where('is_kyc', 3);
+                        })->count();
+        $kycPendingTotal = $userQuery->whereHas('kycDocument', function ($q) {
+                                $q->whereIn('is_kyc', [0,2]);
+                            })->count();
+        $kycTotal = $userQuery->whereHas('kycDocument', function ($q) use($kycStatus) {
+                        $q->whereIn('is_kyc', array_keys($kycStatus));
+                    })->count();
+        // dd($kycFailedTotal,$kycPendingTotal,$kycTotal);
         /* Subscribe Users Statics  */
         $subscriptionTodayTotal = Helper::thousandsFormat(
             $userQuery->whereHas('userSubscription', function ($q) {
@@ -176,6 +188,9 @@ class DashboardController extends Controller
                 'payoutWeeklyTotal',
                 'payoutMonthTotal',
                 'payoutTotal',
+                'kycFailedTotal',
+                'kycPendingTotal',
+                'kycTotal',
                 'subscriptionTodayTotal',
                 'subscriptionWeeklyTotal',
                 'subscriptionMonthTotal',

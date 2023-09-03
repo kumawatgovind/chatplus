@@ -3,11 +3,11 @@
   <!-- Content Header (Service header) -->
   <x-slot name="breadcrumb">
     <div class="row mb-2">
-      <div class="col-sm-6">
+      <div class="col-sm-12">
         <h1>Admin Service Manager</h1>
       </div>
-      <div class="col-sm-6">
-        {{ Breadcrumbs::render('common',['append' => [['label'=> $getController,'route'=> 'admin.categories.index'],['label' => !empty($category) ? 'Edit Service' : 'Add Service' ]]]) }}
+      <div class="col-sm-12">
+        {{ Breadcrumbs::render('common',['append' => [['label'=> 'Service Manager','route'=> 'admin.categories.index'],['label' => !empty($category) ? 'Edit Service' : 'Add Service' ]]]) }}
       </div>
     </div>
   </x-slot>
@@ -33,17 +33,30 @@
               <div class="row">
 
                 <div class="col-md-6">
-                  <div class="form-group required {{ $errors->has('title') ? 'has-error' : '' }}">
-                    <label for="title">Title</label>
-                    {{ Form::text('title', old('title'), ['class' => 'form-control','placeholder' => 'Title']) }}
-                    @if($errors->has('title'))
-                    <span class="help-block">{{ $errors->first('title') }}</span>
+                  <div class="form-group required {{ $errors->has('name') ? 'has-error' : '' }}">
+                    <label for="name">Service Title</label>
+                    {{ Form::text('name', old('name'), ['class' => 'form-control','placeholder' => 'Service Name']) }}
+                    @if($errors->has('name'))
+                    <span class="help-block">{{ $errors->first('name') }}</span>
                     @endif
                   </div>
-
                 </div>
-                <div class="col-md-6">
-                  <div class="container">
+                <div class="col-md-6 kycImages">
+                  <div class="form-group {{ $errors->has('icon') ? 'has-error' : '' }}">
+                    <label for="iconFile">Service icon</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" name="icon" id="iconFile">
+                    </div>
+                    @if($errors->has('icon'))
+                    <span class="help-block">{{ $errors->first('icon') }}</span>
+                    @endif
+                  </div>
+                  <div class="form-group">
+                    <div class="form-control">
+                    <img src="{{ $category->icon_url }}" alt="" style="width:100%">
+                    </div>
+                  </div>
+                  <!-- <div class="container">
                     <div class="form form-group">
                       <label>Parent Services</label>
                       <div id="selected-categories"></div>
@@ -54,7 +67,7 @@
                       </div>
                       {!! Form::hidden('parent_id', old('parent_id'), ['id' => 'selectedParentId']) !!}
                     </div>
-                  </div>
+                  </div> -->
                 </div>
 
 
@@ -99,6 +112,9 @@
     <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.1.6/css/dx.common.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.1.6/css/dx.light.css" />
     <style>
+       .kycImages .form-group .form-control {
+          height: auto;
+        }
       /* .category-option ul { padding: 0px; margin: 0px 0px 0px 18px;}
       .category-option ul li{ padding:0px; margin: 0px; list-style: none;}
       .category-option .card-header{ padding: 0px 10px;}
@@ -170,9 +186,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn3.devexpress.com/jslib/21.1.6/js/dx.all.js"></script>
     <script>
-      var categories = {
-        !!json_encode($categories) !!
-      };;
+      var categories = {!!json_encode($categories) !!};
     </script>
     <script type="text/javascript">
       $(function() {

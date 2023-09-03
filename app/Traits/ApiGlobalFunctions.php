@@ -136,88 +136,87 @@ trait ApiGlobalFunctions
             'invalid_signature' => 'Invalid signature.',
             'payment_success' => 'Payment successfully.',
             'bookmark_success' => 'Bookmark update successfully.',
-            'payout_minimum_not_available' => 'Payout minimum amount should be greater then %s.',
-            'payout_amount_not_available' => 'Account balance (%s) less then requested amount.',
+            'payout_minimum_not_available' => 'You need minimum Rs. %s amount in your wallet for withdrawal.',
+            'payout_amount_not_available' => 'Your wallet balance (%s) less then requested amount.',
             'payout_success' => 'Payout initiated successfully.',
+            'update_kyc' => 'Please update KYC first before the payout initiate.',
         ];
         return isset($msgArray[$label]) ? $msgArray[$label] : $label;
     }
 
-    function sendNotificationFortesing()
+    public static function sendNotificationForTesting($fcm = '')
     {
-        $this->autoRender = false;
-        $data = [];
-        $msg = 'This is test Notification.';
-        $device_type = 'iOS';
-        $device_id = 'fR36QYIvTdqgk7vczzcgN3:APA91bFsTZEt65GLzoSBjrhqXMxSg_avFNgto1lpfWtAoEhi1DdAc1GpjIJp6Od61nFerm0_lMfIc51P8kOyW6nWeHjYomFxapnvKDMnS9D8GcPvMkt8UaQZspWWhmQwMa0O9ZfIogYE';
-        $order_id = 2;
+        $device_type = 'android';
+        $params = [
+            'fcm_token' => $fcm,
+            'notification_title' => 'Test Notification.',
+            'notification_message' => 'This is test Notification.',
+            'notification_type' => 'kyc',
+            'notification_sub_type' => '',
+            'notification_item_id' => 0
+        ];
+        $status = false;
         if ($device_type == 'iOS' || $device_type == 'ios') {
-            $this->ios($device_id, $msg, 'order status', $order_id);
+            self::ios($params);
+            $status = true;
         } else {
-            $this->android($device_id, $msg, 'order status', $order_id);
+            self::android($params);
+            $status = true;
         }
+        return $status;
     }
-
-    function sendNotificationForReceivingMessage($receiver_id, $sender_id, $chatid)
+    
+    /**
+     * static
+     *
+     * @param  mixed $params
+     * @return boolean
+     */
+    public static function sendNotification($params = [])
     {
-        $this->autoRender = false;
-        $data = User::where('id', $receiver_id)->first();
-        $msg = 'You have received new message.';
-        if (!empty($data)) {
-            if (!empty($data->device_type)) {
-                if ($data->device_type == 'iOS' || $data->device_type == 'ios') {
-                    $this->ios($data->device_id, $msg, 'Chat Message', $chatid);
-                } else {
-                    $this->android($data->device_id, $msg, 'Chat Message', $chatid);
-                }
-            }
+        $device_type = 'android';
+        $status = false;
+        if ($device_type == 'iOS' || $device_type == 'ios') {
+            self::ios($params);
+            $status = true;
+        } else {
+            self::android($params);
+            $status = true;
         }
-    }
-
-
-    function sendNotificationForAdvertisementStatus($user_id, $status, $ads_id)
-    {
-        $this->autoRender = false;
-        $data = [];
-        $data = User::where('id', $user_id)->first();
-        $msg = 'Your Advertisement is ' . $status . ' by admin.';
-        if (!empty($data)) {
-            if (!empty($data->device_type)) {
-                if ($data->device_type == 'iOS' || $data->device_type == 'ios') {
-                    $this->ios($data->device_id, $msg, 'adnotification', $ads_id);
-                } else {
-                    $this->android($data->device_id, $msg, 'adnotification', $ads_id);
-                }
-            }
-        }
+        return $status;
     }
 
 
 
-    public function android($device_token, $senderMsg, $notificationType = NULL, $booking_id = NULL)
+    public static function android($params = [])
     {
+        $fcmToken = $params['fcm_token'];
+        $notificationTitle = $params['notification_title'];
+        $notificationMessage = $params['notification_message'];
+        $notificationType = $params['notification_type'] ?? '';
+        $notificationSubType = $params['notification_sub_type'] ?? '';
+        $notificationStatus = $params['notification_status'] ?? '';
+        $notificationItemId = $params['notification_item_id'] ?? 0;
+        
         // API access key from Google API's Console
-        // $server_key = 'AAAAuVmXPqU:APA91bG5V-6eN9KPI1x7LVKOKcSYXjPssJOdLHq5ERzOXc_lVnfOPD3WGhpWFt_V2a_tBX7atGaB96cqP9b5I312NV7Zz4Blg9KdtQ4kN5PMUepsomil0DBdjc7-Dz4gaD72xu4c_WwN';
-        $server_key = 'AAAAuVmXPqU:APA91bG5V-6eN9KPI1x7LVKOKcSYXjPssJOdLHq5ERzOXc_lVnfOPD3WGhpWFt_V2a_tBX7atGaB96cqP9b5I312NV7Zz4Blg9KdtQ4kN5PMUepsomil0DBdjc7-Dz4gaD72xu4c_WwN';
+        $server_key = 'AAAA_Pf6c8o:APA91bGb1Iqnyr5ol51mWRkOeczcEFT9Hm1tfJ1ppPJ39ey4HJotoaOIb-SloVUDxk7V6AQ4drRsEKfURLM9surWnNL29RkmWTeOVhJz531Lq4CUR3ZAKxS3EVbBYwDBhGz12AxoDvVe';
 
-        $formdata['message'] = $senderMsg;
-        $bookingid = isset($booking_id) ? $booking_id : '';
         $msg = array(
-            'title' => '',
-            'body' => $senderMsg,
-            'type' => $notificationType,
-            'booking_id' => isset($booking_id) ? $booking_id : '',
-            'show_in_foreground' => true,
             'sound' => 'default',
-            // 'color' => '#EC1C2B',
             'priority' => 'high',
-            'icon' => url('/') . 'img/app_icon.png',
-            'data' => array('type' => $notificationType, 'booking_id' => $bookingid, 'icon' => url('/') . 'img/app_icon.png')
+            'data' => array(
+                'service_id' => $notificationItemId,
+                'type' => $notificationType,
+                'sub_type' => $notificationSubType,
+                'status' => $notificationStatus,
+                'title' => $notificationTitle,
+                'body' => $notificationMessage,
+                )
         );
 
         // echo "<prE>"; print_r($msg); die('android'); 
         $fields = array(
-            'to' => $device_token,
+            'to' => $fcmToken,
             'notification' => $msg,
             'data' => $msg,
             'priority' => 'high'
@@ -255,12 +254,12 @@ trait ApiGlobalFunctions
      * Des : send puch notification by fcm
      */
 
-    public function ios($deviceId, $senderMsg, $notificationType = NULL, $booking_id = NULL)
+     public static function ios($params = [])
     {
         //$server_key = 'AIzaSyDQR7mNCTAyv1KRfi6B8ySeZGMJmSqSZ4A';
         // $server_key = 'AAAAHmrDJ_w:APA91bH7UPRRCUh_2WOkZ1Rzaltih5PibtEk9jbvPOy2p8lfl2ZSBDJgPMsFdoJg6Itv8oUT7RNE5Ibv-2emxoLVxJUZZ_QDGAPeU_xSJudFjlsK1md2ZbNG2pDFCVRGOFZXC_JBBUTqK5rrZRgOKiMbNzlJoBFkDg';
-        $server_key = 'AAAAuVmXPqU:APA91bG5V-6eN9KPI1x7LVKOKcSYXjPssJOdLHq5ERzOXc_lVnfOPD3WGhpWFt_V2a_tBX7atGaB96cqP9b5I312NV7Zz4Blg9KdtQ4kN5PMUepsomil0DBdjc7-Dz4gaD72xu4c_WwN';
-        if (!empty($deviceId)) {
+        // $server_key = 'AAAAuVmXPqU:APA91bG5V-6eN9KPI1x7LVKOKcSYXjPssJOdLHq5ERzOXc_lVnfOPD3WGhpWFt_V2a_tBX7atGaB96cqP9b5I312NV7Zz4Blg9KdtQ4kN5PMUepsomil0DBdjc7-Dz4gaD72xu4c_WwN';
+        // if (!empty($deviceId)) {
             // $device_badge['badge_count'] = 1;
             // $msg = array(
             //     'body' => $senderMsg,
@@ -281,61 +280,61 @@ trait ApiGlobalFunctions
             //     'priority' => 'high',
             //     'content_available' => true
             // );
-            $bookingid = isset($booking_id) ? $booking_id : '';
+            // $bookingid = isset($booking_id) ? $booking_id : '';
 
-            /*$msg = array(
-                'title' => '',
-                'body' => $senderMsg,
-                'data' => array('type' => $notificationType,'booking_id'=>$bookingid)
-            );*/
+            // /*$msg = array(
+            //     'title' => '',
+            //     'body' => $senderMsg,
+            //     'data' => array('type' => $notificationType,'booking_id'=>$bookingid)
+            // );*/
 
-            $formdata['message'] = $senderMsg;
-            $bookingid = isset($booking_id) ? $booking_id : '';
-            $msg = array(
-                'title' => '',
-                'body' => $senderMsg,
-                'type' => $notificationType,
-                'booking_id' => isset($booking_id) ? $booking_id : '',
-                'show_in_foreground' => true,
-                'sound' => 'default',
-                // 'color' => '#EC1C2B',
-                'priority' => 'high',
-                'icon' => url('/') . 'img/app_icon.png',
-                'data' => array('type' => $notificationType, 'booking_id' => $bookingid, 'icon' => url('/') . 'img/app_icon.png')
-            );
+            // $formdata['message'] = $senderMsg;
+            // $bookingid = isset($booking_id) ? $booking_id : '';
+            // $msg = array(
+            //     'title' => '',
+            //     'body' => $senderMsg,
+            //     'type' => $notificationType,
+            //     'booking_id' => isset($booking_id) ? $booking_id : '',
+            //     'show_in_foreground' => true,
+            //     'sound' => 'default',
+            //     // 'color' => '#EC1C2B',
+            //     'priority' => 'high',
+            //     'icon' => url('/') . 'img/app_icon.png',
+            //     'data' => array('type' => $notificationType, 'booking_id' => $bookingid, 'icon' => url('/') . 'img/app_icon.png')
+            // );
 
-            // echo "<prE>"; print_r($msg); die('ios'); 
-            $fields = array(
-                'to' => $deviceId,
-                'notification' => $msg,
-                'data' => $msg
-            );
+            // // echo "<prE>"; print_r($msg); die('ios'); 
+            // $fields = array(
+            //     'to' => $deviceId,
+            //     'notification' => $msg,
+            //     'data' => $msg
+            // );
 
-            $url = 'https://fcm.googleapis.com/fcm/send';
-            $headers = array(
-                'Authorization:key=' . $server_key,
-                'Content-Type: application/json'
-            );
+            // $url = 'https://fcm.googleapis.com/fcm/send';
+            // $headers = array(
+            //     'Authorization:key=' . $server_key,
+            //     'Content-Type: application/json'
+            // );
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, false);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $result = curl_exec($ch);
-            $results = json_decode($result);
+            // $ch = curl_init();
+            // curl_setopt($ch, CURLOPT_URL, $url);
+            // curl_setopt($ch, CURLOPT_POST, false);
+            // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            // curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+            // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            // $result = curl_exec($ch);
+            // $results = json_decode($result);
 
-            $status = false;
-            if (isset($results)) {
-                if ($results->success == 1) {
-                    $status = true;
-                }
-            }
-            curl_close($ch);
-            return $status;
+            // $status = false;
+            // if (isset($results)) {
+            //     if ($results->success == 1) {
+            //         $status = true;
+            //     }
+            // }
+            // curl_close($ch);
+            // return $status;
             //ob_flush();
-        }
+        // }
     }
 }

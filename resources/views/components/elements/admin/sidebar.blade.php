@@ -57,7 +57,7 @@ $selectedRoutes = Route::currentRouteName();
         </ul>
       </li>
       <!-- Category State City Manager -->
-      <li class="nav-item {{ (in_array($selectedRoutes, ['admin.categories.show', 'admin.categories.index', 'admin.categories.create', 'admin.categories.edit','admin.states.show', 'admin.states.index', 'admin.states.create', 'admin.states.edit', 'admin.states.import', 'admin.cities.show', 'admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.import', 'admin.localities.show', 'admin.localities.index', 'admin.localities.create', 'admin.localities.edit', 'admin.localities.import']))?'menu-is-opening menu-open':'' }}">
+      <li class="nav-item {{ (in_array($selectedRoutes, ['admin.categories.show', 'admin.categories.index', 'admin.categories.create', 'admin.categories.edit', 'admin.categories.import', 'admin.states.show', 'admin.states.index', 'admin.states.create', 'admin.states.edit', 'admin.states.import', 'admin.cities.show', 'admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.import', 'admin.localities.show', 'admin.localities.index', 'admin.localities.create', 'admin.localities.edit', 'admin.localities.import']))?'menu-is-opening menu-open':'' }}">
         <a href="#" class="nav-link">
           <i class="nav-icon fas fa-check-double"></i>
           <p>
@@ -66,7 +66,7 @@ $selectedRoutes = Route::currentRouteName();
           </p>
         </a>
         <ul class="nav nav-treeview">
-          <li class="nav-item {{ (in_array($selectedRoutes, ['admin.categories.show', 'admin.categories.index', 'admin.categories.create', 'admin.categories.edit']))?'active':'' }}">
+          <li class="nav-item {{ (in_array($selectedRoutes, ['admin.categories.show', 'admin.categories.index', 'admin.categories.create', 'admin.categories.edit', 'admin.categories.import']))?'active':'' }}">
             <a href="{{ route('admin.categories.index') }}" class="nav-link">
               <i class="far fa-circle nav-icon"></i>
               <p>Categories</p>

@@ -11,6 +11,7 @@ use App\Models\ServiceProduct;
 use App\Models\ServiceProductImage;
 use App\Models\PropertyAttribute;
 use App\Helpers\Helper;
+use App\Repositories\NotificationRepository;
 use App\Repositories\ServiceProductRepository;
 use Carbon\Carbon;
 use Exception, DB;
@@ -41,6 +42,7 @@ class ServiceProductsController extends Controller
             // }
             if ($serviceProduct = ServiceProductRepository::createUpdate($request)) {
                 $postResponse = ServiceProductRepository::getSingle($serviceProduct->id, $user);
+                NotificationRepository::createNotification($postResponse, $user, 'property');
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('post_save');

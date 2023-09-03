@@ -1,7 +1,7 @@
 
 <?php 
 $title = "State Manager";
-$add = "User";
+$add = "Import States";
 ?>
 <x-layouts.admin>
   @section('title', $title)
@@ -12,7 +12,7 @@ $add = "User";
         <h1>{{$title}}</h1>
       </div>
       <div class="col-sm-12">
-        {{ Breadcrumbs::render('common',['append' => [['label'=> $title,'route'=> 'admin.states.index'],['label' => !empty($state) ? 'Edit '.$add : 'Add '.$add ]]]) }}
+        {{ Breadcrumbs::render('common',['append' => [['label'=> $title,'route'=> 'admin.states.index'],['label' => $add ]]]) }}
       </div>
     </div>
   </x-slot>
@@ -34,14 +34,14 @@ $add = "User";
               <div class="row">
 
                 <div class="col-md-6">
-                  <div class="form-group">
+                  <div class="form-group required {{ $errors->has('import') ? 'has-error' : '' }}">
                       <label for="importFile">Import File</label>
                       <div class="input-group">
-                        <div class="custom-file">
-                          <input type="file" class="custom-file-input" name="import" id="importFile">
-                          <label class="custom-file-label" for="importFile">Choose file</label>
-                        </div>
+                        <input type="file" class="form-control" name="import" id="importFile">
                       </div>
+                      @if($errors->has('import'))
+                      <span class="help-block">{{ $errors->first('import') }}</span>
+                      @endif
                     </div>
 
                 </div>

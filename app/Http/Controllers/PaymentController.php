@@ -57,6 +57,7 @@ class PaymentController extends Controller
         }
         $paymentLogObj = new PaymentLog();
         $paymentLogObj->response = json_encode($event);
+        $paymentLogObj->type = 'payment';
         $paymentLogObj->save();
         if ($event->type == "payment_intent.succeeded") {
             //As I understand here is where I should do things like send order info by mail and deplete stock accordingly

@@ -102,13 +102,16 @@ class PropertyAttribute extends Model
                 $productType = $this->serviceProduct->product_type;
                 $productFor = $this->serviceProduct->product_for;
                 if (!empty($productType) && !empty($productFor)) {
+                    // dd($productType,$productFor);
                     // $productTypeProductFor = config('constants.MASTER_DATA')['type'][$productType][$productFor];
                     // $response = $productTypeProductFor[$this->property_category][$this->property_category_type];
                     $productTypeProductFor = config('constants.MASTER_DATA')['type'][$productType][$productFor];
                     if ($productFor == 'Requirement') {
                         $response = $productTypeProductFor[$this->property_requirement][$this->property_category][$this->property_category_type];
                     } else {
-                        $response = $productTypeProductFor[$this->property_category][$this->property_category_type];
+                        if (!empty($this->property_category) && !empty($this->property_category_type)) {
+                            $response = $productTypeProductFor[$this->property_category][$this->property_category_type];
+                        }
                     }
                     // $response = $productTypeProductFor;
                 }

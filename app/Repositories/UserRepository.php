@@ -47,6 +47,7 @@ class UserRepository
                 'kycDocument' => function ($q) {
                     $q->orderBy('id', 'DESC');
                 },
+                'kycVerified',
                 'activeSubscription'
             ])
             ->where('id', $id)->first();
@@ -139,9 +140,6 @@ class UserRepository
         $serviceProfile->city_id = $request->input('city_id', 0);
         $serviceProfile->state_id = $request->input('state_id', 0);
         $serviceProfile->locality_id = $request->input('locality_id', 0);
-        $serviceProfile->city = $request->input('city', '');
-        $serviceProfile->state = $request->input('state', '');
-        $serviceProfile->locality = $request->input('locality', '');
         $serviceProfile->website = $request->input('website', '');
         $serviceProfile->description = $request->input('description', '');
         $serviceProfile->latitude = $request->input('latitude', '');
@@ -351,6 +349,16 @@ class UserRepository
             }, 'serviceImages'  => function ($q) {
                 $q->select('id', 'name', 'service_id');
             },
+            'state' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'city' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'locality' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'user.kycVerified',
         ]);
         if ($request->input('category_id', false)) {
             $categoryId  = $request->input('category_id', 0);

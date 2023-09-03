@@ -83,7 +83,16 @@ class CitiesController extends Controller
     public function getCityByStateId($stateId = 0)
     {
         $cities = City::where('state_id', $stateId)->pluck('name', 'id')->toArray();
-        dd($cities);
+        $htmlResponse = '';
+        if (!empty($cities)) {
+            $htmlResponse .= '<option value="">Select City</option>';
+            foreach ($cities as $cityId => $cityName) {
+                $htmlResponse .= '<option value="'.$cityId.'">'.$cityName.'</option>';
+            }
+        } else {
+            $htmlResponse .= 'NO';
+        }
+        return $htmlResponse;
     }
 
     /**
@@ -169,8 +178,9 @@ class CitiesController extends Controller
      */
     public function import(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'state_id' => 'required',
+            'import' => 'required|max:10000|mimes:xls,xlsx'
         ]); 
         $stateId = $request->input('state_id', 0);
         $targetPath = $request->file('import')->store('files');

@@ -104,6 +104,7 @@ $('.switch-status.change-request').on('switchChange.bootstrapSwitch', function (
     });
 
 });
+
 $(document).on('click', '.confirmDeleteBtn', function () {
     var _this = $(this);
     var _id = _this.data("id");
@@ -196,9 +197,6 @@ $(document).on('click', '.confirmDeleteBtn', function () {
 
 });
 
-
-
-
 function confirmDelete(elem, title) {
     var title = title;
     var message = $(elem).data("message");
@@ -246,6 +244,34 @@ $(".recrodData").click(function (event) {
         },
         success: function (record) {
             location.href = jQuery(self).attr("href");
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+        }
+    });
+
+});
+
+$("#localityStateId").on('change', function (event) {
+    event.preventDefault();
+    var self = this;
+    var stateId = jQuery(self).val();
+    var cityStateUrl = jQuery('#cityStateUrl').val();
+    var urlData = cityStateUrl + "/" + stateId;
+    $.ajax({
+        url: urlData,
+        dataType: "html",
+        type: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function (record) {
+            if (record != 'NO') {
+                jQuery('#localityCityId').html(record);
+            } else {
+                alert('Cities not available.');
+            }
+            // location.href = jQuery(self).attr("href");
         },
         error: function (xhr, ajaxOptions, thrownError) {
             alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);

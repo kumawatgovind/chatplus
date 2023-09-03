@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\NotificationEvent;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiGlobalFunctions;
 use Illuminate\Support\Facades\Hash;
@@ -15,10 +16,11 @@ use App\Models\State;
 use App\Models\City;
 use App\Models\Locality;
 use App\Models\RecentSearch;
+use App\Models\Page;
 use App\Repositories\UserRepository;
 use Exception;
 use Carbon\Carbon;
-
+use PHPUnit\Framework\Constraint\IsTrue;
 
 class CommonController extends Controller
 {
@@ -128,6 +130,9 @@ class CommonController extends Controller
                     case 'kyc_document':
                         $responseData = self::fileUpload($request);
                         break;
+                    case 'user_status':
+                        $responseData = self::fileUpload($request);
+                        break;
                     default:
                         $responseData = [
                             'upload_file' => '',
@@ -189,6 +194,10 @@ class CommonController extends Controller
             case 'kyc_document':
                 $path = asset('storage/document/');
                 $fileName->move(storage_path('app/public/document/'), $upload_file);
+                break;
+            case 'user_status':
+                $path = asset('storage/status/');
+                $fileName->move(storage_path('app/public/status/'), $upload_file);
                 break;
             default:
                 $upload_file = '';
@@ -456,7 +465,7 @@ class CommonController extends Controller
             $localityQuery = Locality::select('id', 'city_id', 'name')->with('city', function($q) {
                 $q->select('id','name');
             });
-            // $localityQuery = $localityQuery->mobile($keyword);
+            $localityQuery = $localityQuery->mobile($keyword);
             if ($cityId > 0) {
                 $localityQuery = $localityQuery->where('city_id', $cityId);
             }
@@ -506,10 +515,10 @@ class CommonController extends Controller
             $recentSearch = new RecentSearch();
             $recentSearch->user_id = $update['user_id'] = $authUserId;
             $recentSearch->search_type = $update['search_type'] = $request->input('type', false);
-            if ($request->input('city_id', 0) > 0) {
+            if ($request->input('city_id', 0) > 0 && $update['search_type'] == 'city') {
                 $recentSearch->city_id = $update['city_id'] = $request->input('city_id', 0);
             }
-            if ($request->input('locality_id', 0) > 0) {
+            if ($request->input('locality_id', 0) > 0 && $update['search_type'] == 'locality') {
                 $recentSearch->locality_id = $update['locality_id'] = $request->input('locality_id', 0);
             }
             if (RecentSearch::where($update)->first()) {
@@ -603,6 +612,120 @@ class CommonController extends Controller
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
                 $data['data'] = $responseData;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+    
+    /**
+     * checkNotification
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public function checkNotification(Request $request)
+    {
+        $data = [];
+        try {
+            // $authUser = $request->get('Auth');
+            $fcm = $request->input('fcm');
+            // $user = User::where('id', $authUser->id)->first();
+            // dd($user);
+            // $deviceType = $user['device_type'];
+            // $orderId = $user['order_id'];
+            $result = ApiGlobalFunctions::sendNotificationForTesting($fcm);
+            if ($result) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = 'Sent successfully.';
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('invalid_request');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }    
+        
+    /**
+     * pageList
+     *
+     * @param  mixed $request
+     * @return []
+     */
+    public function pageList(Request $request)
+    {
+        $data = [];
+        try {
+            $pages = Page::get(['title', 'slug', 'description']);
+            $pagesList = [];
+            foreach ($pages as $value) {
+                $pagesList[] = [
+                    'slug' => $value->slug,
+                    'page_link' => route('frontend.page', $value->slug),
+                    'title' => $value->title,
+                    'description' => $value->description,
+                ];
+            }
+            if (!empty($pagesList)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_found');
+                $data['data'] = $pagesList;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /**
+     * getPage
+     *
+     * @param  mixed $request
+     * @return []
+     */
+    public function getPage(Request $request, $pageSlug)
+    {
+        $data = [];
+        try {
+            $page = Page::where('slug', $pageSlug)->select(['title', 'slug', 'description'])->first();
+            $page->page_link = route('frontend.page', $page->slug);
+            if (!empty($page)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = $page;
             } else {
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');

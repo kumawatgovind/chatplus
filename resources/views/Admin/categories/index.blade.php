@@ -7,10 +7,10 @@ $qparams = app('request')->query();
   <x-slot name="breadcrumb">
     <div class="row mb-2">
       <div class="col-sm-12">
-        <h1>Service Category Manager</h1>
+        <h1>Service Manager</h1>
       </div>
       <div class="col-sm-12">
-        {{ Breadcrumbs::render('common',['append' => [['label'=> 'Service Category', 'route'=> \Request::route()->getName()]]]) }}
+        {{ Breadcrumbs::render('common',['append' => [['label'=> 'Service Manager', 'route'=> \Request::route()->getName()]]]) }}
       </div>
     </div>
   </x-slot>
@@ -21,10 +21,11 @@ $qparams = app('request')->query();
       <div class="col-md-12">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">Service Category</h3>
+            <h3 class="card-title">Service</h3>
 
             <div class="card-tools">
-              <a href="{{ route('admin.categories.create') }}" class="btn btn-block btn-primary btn-sm" title="Add  Service"><i class="fa fa-plus"></i> Add Service</a>
+              <a href="{{ route('admin.categories.create') }}" class="btn btn-primary btn-sm" title="Add  Service"><i class="fa fa-plus"></i> Add Service</a>
+              <a href="{{ route('admin.categories.import') }}" class="btn btn-primary btn-sm" title="Import Sub Category"><i class="fa fa-plus"></i> Import Sub Category</a>
             </div>
           </div>
           <div class="card-body">
@@ -33,7 +34,10 @@ $qparams = app('request')->query();
                 <h3 class="box-title"><span class="caption-subject font-green bold uppercase">Filter</span></h3>
                 {{ Form::open(['url' => route('admin.categories.index', $qparams),'method' => 'get']) }}
                 <div class="row">
-                  <div class="col-md-5 form-group">
+                  <div class="col-md-3 form-group">
+                    {{ Form::select('category_id', [-1 => 'Only Parent Category']+$parentCategories, app('request')->query('category_id'), ['class' => 'form-control','placeholder' => 'Select category']) }}
+                  </div>
+                  <div class="col-md-3 form-group">
                     {{ Form::text('keyword', app('request')->query('keyword'), ['class' => 'form-control','placeholder' => 'Keyword e.g: Service Name']) }}
                   </div>
                   <div class="col-md-3 form-group">
@@ -43,7 +47,6 @@ $qparams = app('request')->query();
                 </div>
                 {{ Form::close() }}
               </div>
-
             </div>
           </div>
           <!-- /.card-header -->
@@ -52,8 +55,8 @@ $qparams = app('request')->query();
               <thead>
                 <tr>
                   <th style="width:7%">#</th>
-                  <th scope="col" class="actions">Parent Category</th>
-                  <th scope="col">@sortablelink('title', 'Category Name', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
+                  <th scope="col" class="actions">Parent Service</th>
+                  <th scope="col">@sortablelink('title', 'Service Name', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th>@sortablelink('status', 'Status')</th>
                   <th scope="col">@sortablelink('created_at', 'Created', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
                   <th scope="col" class="actions" style="width:12%">Action</th>
@@ -85,8 +88,11 @@ $qparams = app('request')->query();
                   </td>
                   <td>{{ $category->created_at->format(config('get.ADMIN_DATE_FORMAT')) }}</td>
                   <td class="actions action-btn-tab">
-                    <a href="{{ route('admin.categories.show',[ $category->id]) }}" class="btn btn-warning btn-xs" data-toggle="tooltip" alt="View  Category" title="View Category" data-original-title="View"><i class="fa fa-fw fa-eye"></i></a>
-                    <!-- <a href="{{ route('admin.categories.edit',[ $category->id]) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit Category" title="Edit Category" data-original-title="Edit"><i class="fa fa-edit"></i></a>
+                    <a href="{{ route('admin.categories.show', [$category->id]) }}" class="btn btn-warning btn-xs" data-toggle="tooltip" alt="View Service" title="View Service" data-original-title="View"><i class="fa fa-fw fa-eye"></i></a>
+                    @if($category->parent_id == 0)
+                    <a href="{{ route('admin.categories.edit', [$category->id]) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit Service" title="Edit Service" data-original-title="Edit"><i class="fa fa-edit"></i></a>
+                    @endif
+                    <!-- 
                     <a href="javascript:void(0);" class="confirmDeleteBtn btn btn-danger btn-xs" data-toggle="tooltip" alt="Delete {{ $category->title }}" title="Delete Category" data-action="delete" data-message="Are you sure want to delete this category?" data-url="{{ route('admin.categories.destroy', $category->id) }}" data-title="{{ $category->title }}"><i class="fa fa-trash"></i></a> -->
                   </td>
                 </tr>

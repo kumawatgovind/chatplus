@@ -82,7 +82,7 @@ class RazorPayRepository
      * createPayoutFundAccount
      *
      * @param  mixed $request
-     * @return void
+     * @return []
      */
     public static function createPayoutFundAccount(Request $request, $contactDetail)
     {
@@ -208,7 +208,7 @@ class RazorPayRepository
      *
      * @param  mixed $request
      * @param  mixed $fundData
-     * @return void
+     * @return []
      */
     public static function createPayout(Request $request, $fundData)
     {

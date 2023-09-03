@@ -25,7 +25,7 @@ $qparams = app('request')->query();
 
             <div class="card-tools">
               <a href="{{ route('admin.states.create') }}" class="btn btn-primary btn-sm" title="Add State"><i class="fa fa-plus"></i> Add State</a>
-              <a href="{{ route('admin.states.import') }}" class="btn btn-primary btn-sm" title="Add State Import"><i class="fa fa-plus"></i> Add State Import</a>
+              <a href="{{ route('admin.states.import') }}" class="btn btn-primary btn-sm" title="Import State"><i class="fa fa-plus"></i> Import States</a>
             </div>
           </div>
           <div class="card-body">

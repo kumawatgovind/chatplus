@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PayoutController;
+use App\Http\Controllers\PageController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -60,6 +62,9 @@ Route::get('/', function () {
 
 Route::post('/stripe-webhook', [PaymentController::class, 'stripeWebhook']);
 Route::get('/check-route', [PaymentController::class, 'checkRoute']);
+Route::post('/webhook/get-payout-record', [PayoutController::class, 'payoutWebhook']);
+Route::get('/check-payout', [PayoutController::class, 'checkRoute']);
+Route::get('/page/{slug}', [PageController::class, 'getPage'])->name('frontend.page');
 // Route::middleware([
 //     'auth:sanctum',
 //     config('jetstream.auth_session'),

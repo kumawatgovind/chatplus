@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\CategoryRequest;
@@ -27,12 +28,18 @@ class CategoriesController extends Controller
         if (!$response->allowed()) {
             return redirect()->route('admin.dashboard', app('request')->query())->with('error', $response->message());
         }
-        $categories = Category::with('parent')
+        $parentCategories = Category::where(['status' => 1, 'parent_id' => 0])->pluck('name', 'id')->toArray();
+        $query = Category::with('parent')
             ->sortable(['created_at' => 'desc'])
-            ->filter($request->query('keyword'))
-            ->paginate(config('get.ADMIN_PAGE_LIMIT'));
-
-        return view('Admin.categories.index', compact('categories'));
+            ->status()
+            ->filter($request->query('keyword'));
+        if ($request->query('category_id') > 0) {
+            $query = $query->where('parent_id', $request->query('category_id'));
+        } elseif ($request->query('category_id') == -1) {
+            $query = $query->where('parent_id', 0);
+        }
+        $categories = $query->paginate(config('get.ADMIN_PAGE_LIMIT'));
+        return view('Admin.categories.index', compact('categories', 'parentCategories'));
     }
 
     /**
@@ -66,7 +73,12 @@ class CategoriesController extends Controller
             if (empty($requestData['parent_id'])) {
                 $requestData['parent_id'] = 0;
             }
-
+            if (!empty($request->file('icon'))) {
+                $iconName = $request->file('icon');
+                $uploadFile = time() . rand(100, 999) . '.' . $iconName->getClientOriginalExtension();
+                $iconName->move(storage_path('app/public/category/'), $uploadFile);
+                $requestData['icon'] = $uploadFile;
+            }
             Category::create($requestData);
         } catch (\Illuminate\Database\QueryException $e) {
             return back()->withError($e->getMessage())->withInput();
@@ -128,12 +140,16 @@ class CategoriesController extends Controller
         try {
             $category = Category::findOrFail($id);
             $requestData = $request->all();
-
             $requestData['status'] = (isset($requestData['status'])) ? 1 : 0;
             if (empty($requestData['parent_id'])) {
                 $requestData['parent_id'] = 0;
             }
-
+            if (!empty($request->file('icon'))) {
+                $iconName = $request->file('icon');
+                $uploadFile = time() . rand(100, 999) . '.' . $iconName->getClientOriginalExtension();
+                $iconName->move(storage_path('app/public/category/'), $uploadFile);
+                $requestData['icon'] = $uploadFile;
+            }
             $category->fill($requestData);
             $category->save();
         } catch (\Illuminate\Database\QueryException $e) {
@@ -193,5 +209,52 @@ class CategoriesController extends Controller
             $tree_array = $this->getCategoryTree($item->id, $tree_array);
         }
         return $tree_array;
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function importView()
+    {
+        $categories = Category::where('parent_id', 0)->pluck('name', 'id')->toArray();
+        return view('Admin.categories.import', compact('categories'));
+    }
+    
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required',
+            'import' => 'required|max:10000|mimes:xls,xlsx'
+        ]); 
+        $categoryId = $request->input('category_id', 0);
+        $targetPath = $request->file('import')->store('files');
+        $sPath = storage_path('app');
+        $filePath = $sPath.'/'.$targetPath;
+        $importData = Helper::getXlsxData($filePath);
+        $requestData = [];
+        foreach ($importData as $data) {
+            $categoryName = $data[0];
+            if ($categoryName) {
+                $categoryData = Category::where([
+                    'name' => $categoryName,
+                    'parent_id' => $categoryId
+                    ])->first();
+                if (empty($categoryData)) {
+                    $requestData['status'] = 1;
+                    $requestData['parent_id'] = $categoryId;
+                    $requestData['name'] = $categoryName;
+                    Category::create($requestData);
+                }
+            }
+        }
+        unlink(storage_path('app/'.$targetPath));
+        return redirect()->route('admin.categories.index')->with('success', 'All category has been imported successfully');
     }
 }

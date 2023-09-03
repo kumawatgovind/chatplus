@@ -122,6 +122,8 @@ Route::middleware(['auth:admin', 'prevent.history', 'AdminAuth'])->as('admin.')-
         Route::get('/pending-kyc', [KycController::class, 'getPendingKyc'])->name('getPendingKyc');
         Route::get('/mark-re-kyc', [KycController::class, 'getMarkReKyc'])->name('getMarkReKyc');
         Route::get('/total-kyc', [KycController::class, 'getTotalKyc'])->name('getTotalKyc');
+        Route::get('/single-kyc/{kycId}', [KycController::class, 'getSingleKyc'])->name('getSingleKyc');
+        Route::post('/update-kyc', [KycController::class, 'updateKyc'])->name('updateKyc');
 
         Route::get('/contact-list', [PersonalDataController::class, 'getContactList'])->name('getContactList');
         Route::get('/saved-products', [PersonalDataController::class, 'getSavedProducts'])->name('getSavedProducts');
@@ -144,8 +146,10 @@ Route::middleware(['auth:admin', 'prevent.history', 'AdminAuth'])->as('admin.')-
         Route::post('state-import', [StatesController::class, 'import'])->name('states.import');
         Route::get('city-import', [CitiesController::class, 'importView'])->name('cities.import');
         Route::post('city-import', [CitiesController::class, 'import'])->name('cities.import');
-        Route::get('city-state', [CitiesController::class, 'getCityByStateId'])->name('cities.getCityByStateId');
+        Route::get('city-state/{stateId?}', [CitiesController::class, 'getCityByStateId'])->name('cities.cityState');
         Route::get('locality-import', [LocalitiesController::class, 'importView'])->name('localities.import');
         Route::post('locality-import', [LocalitiesController::class, 'import'])->name('localities.import');
+        Route::get('category-import', [CategoriesController::class, 'importView'])->name('categories.import');
+        Route::post('category-import', [CategoriesController::class, 'import'])->name('categories.import');
     }
 );

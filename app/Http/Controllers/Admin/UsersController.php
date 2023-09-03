@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\User;
+use App\Repositories\NotificationRepository;
 use Carbon\Carbon;
 use Gate;
 
@@ -143,9 +144,13 @@ class UsersController extends Controller
             $user = User::findOrFail($id);
             $requestData = $request->all();
             $requestData['status'] = (isset($requestData['status'])) ? 1 : 0;
-            $requestData['is_block'] = (isset($requestData['is_block'])) ? 1 : 0;
+            $requestData['is_block'] = $isBlock = (isset($requestData['is_block'])) ? 1 : 0;
             $user->fill($requestData);
             $user->save();
+            if ($isBlock > 0) {
+                NotificationRepository::createNotification([], $user, 'admin_block');
+                
+            }
         } catch (\Illuminate\Database\QueryException $e) {
             return back()->withError($e->getMessage())->withInput();
         }

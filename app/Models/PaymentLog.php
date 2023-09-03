@@ -10,7 +10,7 @@ class PaymentLog extends Model
 {
     use HasFactory, Sortable;
     protected $fillable = [
-        "response"
+        "response", "type"
     ];
 
     public $sortable = ['created_at', 'updated_at'];

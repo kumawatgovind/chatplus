@@ -6,6 +6,9 @@ use App\Models\PropertyAttribute;
 use App\Models\ServiceProduct;
 use App\Models\ServiceProductImage;
 use App\Models\User;
+use App\Models\Locality;
+use App\Models\Category;
+use App\Models\City;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function is;
@@ -115,7 +118,7 @@ class ServiceProductRepository
      * @param  mixed $request
      * @return obj
      */
-    public static function getSingle($serviceProductId, $user)
+    public static function getSingle($serviceProductId, $user = [])
     {
         $query = ServiceProduct::status()->with([
             'category' => function ($q) {
@@ -135,6 +138,7 @@ class ServiceProductRepository
             'serviceProductImage',
             'propertyAttribute',
             'serviceUser',
+            'serviceUser.kycVerified',
             'serviceUser.userServicesProfile',
             'serviceUser.userServicesProfile.serviceImages',
             'serviceUser.userServicesProfile.state' => function ($q) {
@@ -166,8 +170,25 @@ class ServiceProductRepository
             unset($serviceProductData->serviceUser->userServicesProfile->serviceImages);
             $serviceProductData->serviceUser->userServicesProfile->serviceImages = $responseServiceImage;
         }
-        $serviceProductData->is_bookmark = $serviceProductData->is_bookmarked($user);
+        if (!empty($user)) {
+            $serviceProductData->is_bookmark = $serviceProductData->is_bookmarked($user);
+        }
         return $serviceProductData;
+    }
+    /**
+     * getServiceProductNotificationList
+     *
+     * @param  mixed $request
+     * @return obj
+     */
+    public static function getServiceProductNotificationList($serviceProductId)
+    {
+        $query = ServiceProduct::status()->where('id', $serviceProductId);
+        $serviceProductData = $query->first();
+        $users = User::leftJoin('service_profiles', 'service_profiles.user_id', '=', 'users.id')
+        ->where('locality_id', $serviceProductData->locality_id)
+        ->OrWhere('category_id', $serviceProductData->category_id)->get();
+        return $users;
     }
 
     /**
@@ -184,6 +205,12 @@ class ServiceProductRepository
             $limit = config('get.FRONT_END_PAGE_LIMIT');
         }
         $user = $request->get('Auth');
+        $cityArray = $localityArray = $categoryArray = [];
+        if ($request->input('keyword', false)) {
+            $cityArray = City::filter($request->input('keyword', false))->pluck('id')->toArray();
+            $localityArray = Locality::filter($request->input('keyword', false))->pluck('id')->toArray();
+            $categoryArray = Category::filter($request->input('keyword', false))->pluck('id')->toArray();
+        }
         $query = ServiceProduct::with([
             'category' => function ($q) {
                 $q->select('id', 'name', 'icon');
@@ -204,6 +231,7 @@ class ServiceProductRepository
             'propertyAttribute',
             'serviceUser',
             'serviceUser.userServicesProfile',
+            'serviceUser.kycVerified',
             'serviceUser.userServicesProfile.serviceImages',
             'serviceUser.userServicesProfile.state' => function ($q) {
                 $q->select('id', 'name');
@@ -215,6 +243,14 @@ class ServiceProductRepository
                 $q->select('id', 'name');
             }
         ]);
+        // dd($localityArray,$categoryArray);
+        if (!empty($cityArray) || !empty($localityArray) || !empty($categoryArray)) {
+            $query = $query->whereIn('city_id', $cityArray)
+            ->orWhereIn('locality_id', $localityArray)
+            ->orWhereIn('category_id', $categoryArray)
+            ->orWhereIn('sub_category_id', $categoryArray);
+        }
+    
         if ($request->input('category_id', false)) {
             $categoryId  = $request->input('category_id', 0);
             $query = $query->where('category_id', $categoryId);

@@ -25,7 +25,7 @@ $qparams = app('request')->query();
 
             <div class="card-tools">
               <a href="{{ route('admin.localities.create') }}" class="btn btn-primary btn-sm" title="Add Locality"><i class="fa fa-plus"></i> Add Locality</a>
-              <a href="{{ route('admin.localities.import') }}" class="btn btn-primary btn-sm" title="Add Locality Import"><i class="fa fa-plus"></i> Add Locality Import</a>
+              <a href="{{ route('admin.localities.import') }}" class="btn btn-primary btn-sm" title="Import Locality"><i class="fa fa-plus"></i> Import Localities</a>
             </div>
           </div>
           <div class="card-body">

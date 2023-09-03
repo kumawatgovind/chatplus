@@ -63,7 +63,8 @@ $title = "Users Pending Kyc";
                   <th scope="col">Name</th>
                   <th scope="col">Phone Number</th>
                   <th scope="col">Member Since</th>
-                  <th scope="col" width="10%">Kyc Status</th>
+                  <th scope="col">Kyc Status</th>
+                  <th scope="col" width="10%">Action</th>
                 </tr>
 
               </thead>
@@ -79,13 +80,16 @@ $title = "Users Pending Kyc";
                   <td>{{ $user->country_code.$user->phone_number}}</td>
                   <td>{{ $user->created_at->format(config('get.ADMIN_DATE_FORMAT')) }}</td>
                   <td>
-                    @if(empty($user->is_kyc))
-                    <span class="btn-block btn-danger btn-xs text-center">N/A</span>
-                    @elseif($user->is_kyc == 2)
-                    <span class="btn-block btn-warning btn-xs text-center">{{ $kycStatus[$user->is_kyc] }}</span>
+                    @if(empty($user->kyc_document_id))
+                    <span class="btn-block btn-danger btn-xs text-center">KYC Not Updated</span>
                     @else
-                    <span class="btn-block btn-danger btn-xs text-center">{{ $kycStatus[$user->is_kyc] }}</span>
+                    <span class="btn-block btn-warning btn-xs text-center">{{ $kycStatus[$user->is_kyc] }}</span>
                     @endif
+                  </td>
+                  <td>
+                  @if(!empty($user->kyc_document_id))
+                  <a href="{{ route('admin.getSingleKyc',$user->kyc_document_id) }}" class="btn btn-primary btn-xs" data-toggle="tooltip" alt="Edit Kyc" title="Edit Kyc" data-original-title="Edit"><i class="fa fa-edit"></i></a>
+                  @endif
                   </td>
                 </tr>
                 @php

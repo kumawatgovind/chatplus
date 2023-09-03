@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiGlobalFunctions;
 use Illuminate\Http\Request;
-use App\Models\Page;
 use App\Models\User;
 use App\Models\Sponsor;
 use App\Repositories\SponsorRepository;
@@ -616,7 +615,6 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-    
     /**
      * spamReported
      *
@@ -825,29 +823,6 @@ class UsersController extends Controller
         }
     }
 
-
-    public function pageList(Request $request)
-    {
-        $input = $request->all();
-        try {
-            $where = array('1', '6', '18');
-            //::whereIn('id',$where)->
-            $settings = Page::get(['title', 'slug', 'description']);
-            $singleArray = [];
-            foreach ($settings as $key => $value) {
-                $slug = str_replace('-', '', $value->slug);
-                $singleArray[$slug] = $value->description;
-            }
-            if (!empty($singleArray)) {
-                return ApiGlobalFunctions::sendResponse($singleArray, ApiGlobalFunctions::messageDefault('List found successfully.'));
-            } else {
-                return ApiGlobalFunctions::sendResponse((object) [], ApiGlobalFunctions::messageDefault('Record not found.'));
-            }
-        } catch (\Exception $e) {
-            return ApiGlobalFunctions::sendError($e->getMessage());
-        }
-    }
-
     public function faqList(Request $request)
     {
         $input = $request->all();
@@ -866,19 +841,34 @@ class UsersController extends Controller
 
     public function logout(Request $request)
     {
-        $user = $request->get('Auth');
-        $result = User::where('id', $user->id)->update([
-            'api_token' => '',
-            'device_type' => '',
-            'device_id' => '',
-            'fcm_token' => ''
-        ]);
-        if ($result) {
-            $data = (object) [];
-            return ApiGlobalFunctions::sendResponse($data, ApiGlobalFunctions::messageDefault('Logout successfully.'));
-        } else {
-            return ApiGlobalFunctions::sendError(ApiGlobalFunctions::messageDefault('process_failed'));
+        $data = [];
+        try {
+            $user = $request->get('Auth');
+            $result = User::where('id', $user->id)->update([
+                'api_token' => '',
+                'device_type' => '',
+                'device_id' => '',
+                'fcm_token' => ''
+            ]);
+            if ($result) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = 'Logout successfully.';
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('invalid_request');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
         }
+        return ApiGlobalFunctions::responseBuilder($data);
     }
 
     public function userCheck(Request $request)

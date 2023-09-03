@@ -263,6 +263,7 @@ class User extends Authenticatable
         ->where('end_date', '>=', $date)
         ->where('is_active', 1);
     }
+    
 
     /**
      * userStatus
@@ -284,6 +285,16 @@ class User extends Authenticatable
         return $this->hasMany(KycDocument::class, 'user_id', 'id');
     }
 
+    /**
+     * activeSubscription
+     *
+     * @return void
+     */
+    public function kycVerified()
+    {
+        return $this->hasOne(KycDocument::class, 'user_id', 'id')
+        ->where('is_kyc', 1);
+    }
     /**
      * contactSync
      *
