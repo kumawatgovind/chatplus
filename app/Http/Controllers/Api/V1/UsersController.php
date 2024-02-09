@@ -65,7 +65,7 @@ class UsersController extends Controller
             }
         } catch (Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -109,7 +109,7 @@ class UsersController extends Controller
             }
         } catch (Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -156,7 +156,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -201,7 +201,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -254,7 +254,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -295,7 +295,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -340,7 +340,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -381,7 +381,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -414,7 +414,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -424,7 +424,7 @@ class UsersController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-    
+
     /**
      * updateFcmUpdate
      *
@@ -455,7 +455,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -481,7 +481,7 @@ class UsersController extends Controller
                 $userId = $request->input('user_id', false);
             }
             $sponsorUser = Sponsor::where('sponsored_user_id', $userId)->select('sponsor_user_id')->first();
-            
+
             if ($sponsorUser) {
                 $level = ReferralSystem::getCheckCurrentLevel($userId);
             } else {
@@ -503,7 +503,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -540,7 +540,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -572,7 +572,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -605,7 +605,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -642,7 +642,7 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -861,7 +861,34 @@ class UsersController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    public function removeUser(Request $request)
+    {
+        $data = [];
+        try {
+            $user = $request->get('Auth');
+            $result = User::where('id', $user->id)->delete();
+            if ($result) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = 'Removed successfully.';
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('invalid_request');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {

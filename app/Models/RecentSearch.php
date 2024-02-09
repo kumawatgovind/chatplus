@@ -28,6 +28,7 @@ class RecentSearch extends Model
         'search_type',
         'district_id',
         'locality_id',
+        'state_id',
     ];
 
     /**
@@ -65,5 +66,15 @@ class RecentSearch extends Model
     public function locality()
     {
         return $this->belongsTo(Locality::class, 'locality_id');
+    }  
+
+    /**
+     * state
+     *
+     * @return void
+     */
+    public function state()
+    {
+        return $this->belongsTo(State::class, 'state_id');
     }  
 }

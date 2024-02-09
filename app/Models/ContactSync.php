@@ -21,7 +21,8 @@ class ContactSync extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
+        'sync_by_user_id',
+        'if_user_existing_id',
         'code',
         'cid',
         'name',
@@ -31,12 +32,36 @@ class ContactSync extends Model
     public $sortable = ['created_at', 'updated_at'];
 
     /**
-     * users
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'sync_by_user_id',
+        'if_user_existing_id',
+        'code',
+        'cid',
+        'created_at',
+        'updated_at',
+    ];
+
+    /**
+     * syncByUser
      *
      * @return void
      */
-    public function users()
+    public function syncByUser()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'sync_by_user_id');
+    }
+
+    /**
+     * ifUserExisting
+     *
+     * @return void
+     */
+    public function ifUserExisting()
+    {
+        return $this->belongsTo(User::class, 'if_user_existing_id');
     }
 }

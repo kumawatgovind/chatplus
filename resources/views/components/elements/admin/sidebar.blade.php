@@ -231,8 +231,8 @@ $selectedRoutes = Route::currentRouteName();
         </ul>
       </li>
       <!-- Marketing Manager -->
-      <li class="nav-item {{ (in_array($selectedRoutes, ['admin.settings.show', 'admin.settings.index', 'admin.settings.create', 'admin.settings.edit']))?'menu-is-opening menu-open':'' }}">
-        <a href="#" class="nav-link">
+      <li class="nav-item {{ (in_array($selectedRoutes, ['admin.marketings.show', 'admin.marketings.index', 'admin.marketings.create', 'admin.marketings.edit']))?'menu-is-opening menu-open':'' }}">
+        <a href="{{ route('admin.marketings.index') }}" class="nav-link">
           <i class="nav-icon fas fa-lightbulb"></i>
           <p>Marketing Manager</p>
         </a>
@@ -291,76 +291,76 @@ $selectedRoutes = Route::currentRouteName();
     {{--
       @can('check-user', "email_templates-index")
       <li class="nav-item {{ in_array($selectedRoutes, ['admin.hooks.index','admin.hooks.create','admin.hooks.edit','admin.hooks.show','admin.email-preferences.index','admin.email-preferences.create','admin.email-preferences.edit','admin.email-preferences.show', 'admin.email-templates.index','admin.email-templates.create','admin.email-templates.edit','admin.email-templates.show']) ? 'menu-is-opening menu-open' : '' }}">
-    <a href="#" class="nav-link {{ in_array($selectedRoutes, ['admin.hooks.index','admin.hooks.create','admin.hooks.edit','admin.hooks.show','admin.email-preferences.index','admin.email-preferences.create','admin.email-preferences.edit','admin.email-preferences.show', 'admin.email-templates.index','admin.email-templates.create','admin.email-templates.edit','admin.email-templates.show']) ? 'active' : '' }}">
-      <i class="nav-icon fas fa-envelope"></i>
-      <p>
-        Email Templates
-        <i class="right fas fa-angle-right"></i>
-      </p>
-    </a>
-    <ul class="nav nav-treeview">
-      <li class="nav-item {{ in_array($selectedRoutes, ['admin.hooks.index','admin.hooks.create','admin.hooks.edit','admin.hooks.show']) ? 'active' : '' }}">
-        <a href="{{ route('admin.hooks.index')}}" class="nav-link">
-          <i class="far fa-circle nav-icon"></i> Hooks (slugs)
+        <a href="#" class="nav-link {{ in_array($selectedRoutes, ['admin.hooks.index','admin.hooks.create','admin.hooks.edit','admin.hooks.show','admin.email-preferences.index','admin.email-preferences.create','admin.email-preferences.edit','admin.email-preferences.show', 'admin.email-templates.index','admin.email-templates.create','admin.email-templates.edit','admin.email-templates.show']) ? 'active' : '' }}">
+          <i class="nav-icon fas fa-envelope"></i>
+          <p>
+            Email Templates
+            <i class="right fas fa-angle-right"></i>
+          </p>
         </a>
+        <ul class="nav nav-treeview">
+          <li class="nav-item {{ in_array($selectedRoutes, ['admin.hooks.index','admin.hooks.create','admin.hooks.edit','admin.hooks.show']) ? 'active' : '' }}">
+            <a href="{{ route('admin.hooks.index')}}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i> Hooks (slugs)
+            </a>
+          </li>
+          <li class="nav-item {{ in_array($selectedRoutes, ['admin.email-preferences.index','admin.email-preferences.create','admin.email-preferences.edit','admin.email-preferences.show']) ? 'active' : '' }}">
+            <a href="{{ route('admin.email-preferences.index') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i> Email Preferences (layouts)
+            </a>
+          </li>
+          <li class="nav-item {{ in_array($selectedRoutes, ['admin.email-templates.index','admin.email-templates.create','admin.email-templates.edit','admin.email-templates.show']) ? 'active' : '' }}">
+            <a href="{{ route('admin.email-templates.index') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i> Email Templates
+            </a>
+          </li>
+        </ul>
       </li>
-      <li class="nav-item {{ in_array($selectedRoutes, ['admin.email-preferences.index','admin.email-preferences.create','admin.email-preferences.edit','admin.email-preferences.show']) ? 'active' : '' }}">
-        <a href="{{ route('admin.email-preferences.index') }}" class="nav-link">
-          <i class="far fa-circle nav-icon"></i> Email Preferences (layouts)
-        </a>
-      </li>
-      <li class="nav-item {{ in_array($selectedRoutes, ['admin.email-templates.index','admin.email-templates.create','admin.email-templates.edit','admin.email-templates.show']) ? 'active' : '' }}">
-        <a href="{{ route('admin.email-templates.index') }}" class="nav-link">
-          <i class="far fa-circle nav-icon"></i> Email Templates
-        </a>
-      </li>
-    </ul>
-    </li>
-    @endcan
+      @endcan
     --}}
 
     {{--
       @can('check-user', "locations-index")
-      <li class="nav-item {{ (in_array($selectedRoutes, ['admin.locations.index', 'admin.locations.create', 'admin.locations.edit', 'admin.locations.show', 'admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.show', 'admin.areas.index', 'admin.areas.create', 'admin.areas.edit', 'admin.areas.show']))?'menu-is-opening menu-open':'' }}">
-    <a href="#" class="nav-link {{ (in_array($selectedRoutes, ['admin.locations.index', 'admin.locations.create', 'admin.locations.edit', 'admin.locations.show', 'admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.show', 'admin.areas.index', 'admin.areas.create', 'admin.areas.edit', 'admin.areas.show']))?'active':'' }}">
-      <i class="nav-icon fas fa-search-location"></i>
-      <p>
-        Locations Manager
-        <i class="right fas fa-angle-right"></i>
-      </p>
-    </a>
-    <ul class="nav nav-treeview">
-      <li class="nav-item {{ (in_array($selectedRoutes, ['admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.show'])) ? 'active' : '' }}">
-        <a href="{{ route('admin.cities.index') }}" class="nav-link">
-          <i class="far fa-circle nav-icon"></i>
-          <p>Cities</p>
-        </a>
-      </li>
-      <!-- <li class="nav-item {{ (in_array($selectedRoutes, ['admin.areas.index', 'admin.areas.create', 'admin.areas.edit', 'admin.areas.show'])) ? 'active' : '' }}">
-            <a href="{{ route('admin.areas.index') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>Areas</p>
-            </a>
-          </li> -->
-      <li class="nav-item {{ (in_array($selectedRoutes,['admin.locations.index', 'admin.locations.create', 'admin.locations.edit', 'admin.locations.show'])) ? 'active' : '' }}">
-        <a href="{{ route('admin.locations.index') }}" class="nav-link">
-          <i class="far fa-circle nav-icon"></i>
-          <p>Locations</p>
-        </a>
-      </li>
-    </ul>
+    <li class="nav-item {{ (in_array($selectedRoutes, ['admin.locations.index', 'admin.locations.create', 'admin.locations.edit', 'admin.locations.show', 'admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.show', 'admin.areas.index', 'admin.areas.create', 'admin.areas.edit', 'admin.areas.show']))?'menu-is-opening menu-open':'' }}">
+      <a href="#" class="nav-link {{ (in_array($selectedRoutes, ['admin.locations.index', 'admin.locations.create', 'admin.locations.edit', 'admin.locations.show', 'admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.show', 'admin.areas.index', 'admin.areas.create', 'admin.areas.edit', 'admin.areas.show']))?'active':'' }}">
+        <i class="nav-icon fas fa-search-location"></i>
+        <p>
+          Locations Manager
+          <i class="right fas fa-angle-right"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item {{ (in_array($selectedRoutes, ['admin.cities.index', 'admin.cities.create', 'admin.cities.edit', 'admin.cities.show'])) ? 'active' : '' }}">
+          <a href="{{ route('admin.cities.index') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Cities</p>
+          </a>
+        </li>
+        <!-- <li class="nav-item {{ (in_array($selectedRoutes, ['admin.areas.index', 'admin.areas.create', 'admin.areas.edit', 'admin.areas.show'])) ? 'active' : '' }}">
+              <a href="{{ route('admin.areas.index') }}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Areas</p>
+              </a>
+            </li> -->
+        <li class="nav-item {{ (in_array($selectedRoutes,['admin.locations.index', 'admin.locations.create', 'admin.locations.edit', 'admin.locations.show'])) ? 'active' : '' }}">
+          <a href="{{ route('admin.locations.index') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Locations</p>
+          </a>
+        </li>
+      </ul>
     </li>
     @endcan
     --}}
 
     {{--
       @can('check-user', "settings-index")
-      <li class="nav-item {{ (in_array($selectedRoutes, ['admin.settings.show', 'admin.settings.index', 'admin.settings.create', 'admin.settings.edit']))?'menu-is-opening menu-open':'' }}">
-    <a href="{{ route('admin.settings.index') }}" class="nav-link {{ (in_array($selectedRoutes, ['admin.settings.show', 'admin.settings.index', 'admin.settings.create', 'admin.settings.edit']))?'active':'' }}">
-      <i class="fas fa-cogs nav-icon"></i>
-      <p>General Settings</p>
-    </a>
-    <!-- <ul class="nav nav-treeview">
+    <li class="nav-item {{ (in_array($selectedRoutes, ['admin.settings.show', 'admin.settings.index', 'admin.settings.create', 'admin.settings.edit']))?'menu-is-opening menu-open':'' }}">
+      <a href="{{ route('admin.settings.index') }}" class="nav-link {{ (in_array($selectedRoutes, ['admin.settings.show', 'admin.settings.index', 'admin.settings.create', 'admin.settings.edit']))?'active':'' }}">
+        <i class="fas fa-cogs nav-icon"></i>
+        <p>General Settings</p>
+      </a>
+      <!-- <ul class="nav nav-treeview">
           <li class="nav-item  {{ ($selectedRoutes =='admin.settings.index')?'active':'' }}">
             <a href="{{ route('admin.settings.index') }}" class="nav-link">
               <i class="far fa-circle nav-icon"></i>

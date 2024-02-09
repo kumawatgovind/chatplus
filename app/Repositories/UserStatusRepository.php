@@ -2,9 +2,12 @@
 
 namespace App\Repositories;
 
-use App\Models\UserStatus;
-use App\Models\UserStatusMedia;
-use App\Models\User;
+use App\Models\ContactSync;
+use App\Models\Friend;
+use App\Models\Status;
+use App\Models\StatusMedia;
+use App\Models\StatusView;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function is;
@@ -15,33 +18,38 @@ class UserStatusRepository
 {
 
     /**
-     * getSingle
+     * create
      *
      * @param  mixed $request
      * @return obj
      */
     public static function create(Request $request)
     {
-
         DB::beginTransaction();
         try {
             $authUser = $request->get('Auth');
-            $userStatus = new UserStatus();
+            $userStatus = Status::where('statuses.user_id', $authUser->id)->first();
+            if (empty($userStatus)) {
+                $userStatus = new Status();
+            }
             $userStatus->user_id = $authUser->id;
-            $userStatus->status_type = $statusType = $request->input('status_type', false);
-            $userStatus->status_text = $request->input('status_text', false);
-            $userStatusMedias = $request->input('user_status_medias') ?? [];
+            $userStatus->media_type = $statusType = $request->input('status_type', false);
+            // $userStatus->content = $request->input('content', false);
+            // $userStatus->start_status = $current->toDateTimeString();
+            // $userStatus->end_status = $current->addDays(1)->toDateTimeString();
+            $statusMedia = $request->input('status_media') ?? [];
             if ($userStatus->save()) {
-                if (!empty($userStatusMedias) && $statusType != 'text') {
-                    $ordering = 1;
-                    foreach ($userStatusMedias as $value) {
+                if (!empty($statusMedia) && $statusType != 'text') {
+                    foreach ($statusMedia as $value) {
                         if (!empty($value)) {
+                            $current = Carbon::now();
                             $attachmentData = [];
                             $attachmentData['status_id'] = $userStatus->id;
+                            $attachmentData['media_type'] = $statusType;
                             $attachmentData['name'] = $value;
-                            $attachmentData['ordering'] = $ordering;
-                            UserStatusMedia::create($attachmentData);
-                            $ordering++;
+                            $attachmentData['start_status'] = $current->toDateTimeString();
+                            $attachmentData['end_status'] = $current->addDays(1)->toDateTimeString();
+                            StatusMedia::create($attachmentData);
                         }
                     }
                 }
@@ -66,87 +74,133 @@ class UserStatusRepository
         }
     }
 
-    /**
-     * getSingle
-     *
-     * @param  mixed $request
-     * @return obj
-     */
-    public static function getSingle($statusId)
-    {
-        $query = UserStatus::status()
-            ->with([
-                'userStatusMedia',
-                'user',
-                'user.userServicesProfile',
-                'user.userServicesProfile.serviceImages'
-            ]);
-
-        $query = $query->where('id', $statusId);
-        $statusData = $query->first();
-        if (!empty($statusData->userStatusMedia)) {
-            $responseImage = [];
-            foreach ($statusData->userStatusMedia as $userStatusMedia) {
-                $responseImage[] = $userStatusMedia->name;
-            }
-            unset($statusData->userStatusMedia);
-            $statusData->userStatusMedias = $responseImage;
-        }
-        if (!empty($statusData->user->userServicesProfile->serviceImages)) {
-            $responseServiceImage = [];
-            foreach ($statusData->user->userServicesProfile->serviceImages as $serviceImage) {
-                $responseServiceImage[] = $serviceImage->name;
-            }
-            unset($statusData->user->userServicesProfile->serviceImages);
-            $statusData->user->userServicesProfile->serviceImages = $responseServiceImage;
-        }
-        return $statusData;
-    }
-
 
     /**
-     * list
+     * myStories
      *
      * @param  mixed $request
      * @return void
      */
-    public static function list(Request $request)
+    public static function myStories(Request $request)
     {
-        if ($request->input('limit', false)) {
-            $limit  = $request->input('limit', 0);
-        } else {
-            $limit = config('get.FRONT_END_PAGE_LIMIT');
-        }
-        $query = UserStatus::status()
+        $authUser = $request->get('Auth');
+        $current = Carbon::now();
+        $query = Status::where('statuses.user_id', $authUser->id)
             ->with([
-                'userStatusMedia',
                 'user',
-                'user.userServicesProfile',
-                'user.userServicesProfile.serviceImages'
-            ]);
-        $userStatus = $query->orderBy('id', 'desc')->paginate($limit);
-        // dd($userStatus);
-        if (!empty($userStatus)) {
-            foreach ($userStatus as $sKey => $status) {
-                if (!empty($status->userStatusMedia)) {
-                    $responseMedia = [];
-                    foreach ($status->userStatusMedia as $userStatusMedia) {
-                        $responseMedia[] = $userStatusMedia->name;
-                    }
-                    unset($userStatus[$sKey]->userStatusMedia);
-                    $userStatus[$sKey]->userStatusMedias = $responseMedia;
+                'statusMedias' => function ($q) use($current) {
+                    return $q->where('start_status', '<=', $current)
+                    ->where('end_status', '>=', $current)
+                    ->orderBy('status_medias.id', 'asc')->withCount('statusView');
+                },
+                'statusMedias.statusView' => function ($q) use($authUser) {
+                    return $q->where('status_views.view_user_id', $authUser->id);
                 }
-                if (!empty($status->user->userServicesProfile->serviceImages)) {
-                    $responseServiceImage = [];
-                    foreach ($status->user->userServicesProfile->serviceImages as $serviceImage) {
-                        $responseServiceImage[] = $serviceImage->name;
+            ]);
+        $userStatus = $query->orderBy('statuses.id', 'desc')->get();
+        // dd($userStatus);
+        $statusOutput = [];
+        if ($userStatus->count() > 0) {
+            foreach ($userStatus as $status) {
+                $userStoryList = [];
+                if ($status->statusMedias->count() > 0) {
+                    foreach ($status->statusMedias as $storyList) {
+                        $userStoryList[] = [
+                            'status_media_id' => $storyList->id,
+                            'media_type' => $storyList->media_type,
+                            'media_url' => $storyList->base_path.'/'.$storyList->name,
+                            'name' => $status->user->name,
+                            'start_time' => strtotime($storyList->start_status),
+                            'end_time' => strtotime($storyList->end_status),
+                            'startTime' => date('d-m-Y h:i A', strtotime($storyList->start_status)),
+                            'endTime' => date('d-m-Y h:i A', strtotime($storyList->end_status)),
+                            'is_seen' => ($storyList->owner_view) ? true : false,
+                            'total_view' => ($storyList->statusView->count() > 0) ? $storyList->status_view_count-1 : $storyList->status_view_count,
+                        ];
                     }
-                    unset($userStatus[$sKey]->user->userServicesProfile->serviceImages);
-                    $userStatus[$sKey]->user->userServicesProfile->serviceImage = $responseServiceImage;
+                }
+                if (!empty($userStoryList)) {
+                    $statusOutput[] = [
+                        'id' => $status->id,
+                        'user_name' => $status->user->name,
+                        'phone_number' => $status->user->phone_number,
+                        'userStoryList' => $userStoryList
+                    ];
                 }
             }
         }
-        return $userStatus;
+        return $statusOutput;
+    }
+
+    /**
+     * friendsStories
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public static function friendsStories(Request $request)
+    {
+        $authUser = $request->get('Auth');
+        $myUsers = Friend::select('friend_id')
+        ->where('user_id', $authUser->id)
+        ->distinct()->get();
+        $meFriends = Friend::select('user_id')
+        ->where('friend_id', $authUser->id)
+        ->distinct()->get();
+        // dd($myUsers, $meFriends);
+        $myFriendsIds = $myUsers->pluck('friend_id')->toArray();
+        $myFriendsUserIds = $meFriends->pluck('user_id')->toArray();
+        // dd($myFriendsUserIds, $myFriendsIds);
+        $resultFriends = array_merge($myFriendsUserIds, $myFriendsIds);
+        $resultFriendsIds = array_unique($resultFriends);
+        // dd($resultFriendsIds);
+        $current = Carbon::now();
+        $query = Status::whereIn('statuses.user_id', $resultFriendsIds)
+            ->with([
+                'user',
+                'statusMedias' => function ($q) use($current,$authUser) {
+                    return $q->where('start_status', '<=', $current)
+                    ->where('end_status', '>=', $current)
+                    ->orderBy('status_medias.id', 'asc')
+                    ->withCount('statusView');
+                },
+                'statusMedias.statusView' => function ($q) use($authUser) {
+                    return $q->where('status_views.view_user_id', $authUser->id);
+                }
+            ]);
+        $userStatus = $query->orderBy('statuses.id', 'desc')->get();
+        
+        $statusOutput = [];
+        if ($userStatus->count() > 0) {
+            foreach ($userStatus as $status) {
+                $userStoryList = [];
+                if ($status->statusMedias->count() > 0) {
+                    foreach ($status->statusMedias as $storyList) {
+                        $userStoryList[] = [
+                            'status_media_id' => $storyList->id,
+                            'media_type' => $storyList->media_type,
+                            'media_url' => $storyList->base_path.'/'.$storyList->name,
+                            'name' => $status->user->name,
+                            'start_time' => strtotime($storyList->start_status),
+                            'end_time' => strtotime($storyList->end_status),
+                            'startTime' => date('d-m-Y h:i A', strtotime($storyList->start_status)),
+                            'endTime' => date('d-m-Y h:i A', strtotime($storyList->end_status)),
+                            'is_seen' => ($storyList->statusView->count() > 0) ? true : false,
+                            'total_view' => $storyList->status_view_count,
+                        ];
+                    }
+                }
+                if (!empty($userStoryList)) {
+                    $statusOutput[] = [
+                        'id' => $status->id,
+                        'user_name' => $status->user->name,
+                        'phone_number' => $status->user->phone_number,
+                        'userStoryList' => $userStoryList
+                    ];
+                }
+            }
+        }
+        return $statusOutput;
     }
 
     /**
@@ -155,17 +209,27 @@ class UserStatusRepository
      * @param  mixed $request
      * @return void
      */
-    public static function deleteProduct(Request $request)
+    public static function deleteStatus(Request $request)
     {
         DB::beginTransaction();
         try {
             $authUser = $request->get('Auth');
-            if ($request->input('product_id', false) > 0) {
-                $productId = $request->input('product_id', false);
-                Product::where([
-                    'id' => $productId,
-                    'user_id' => $authUser->id,
-                ])->delete();
+            if ($request->input('status_id', false) > 0) {
+                $statusId = $request->input('status_id', false);
+                $statusMediaId = $request->input('status_media_id', false);
+                if (Status::where(['id' => $statusId, 'user_id' => $authUser->id])->exists()) {
+                    StatusMedia::where([
+                        'id' => $statusMediaId,
+                        'status_id' => $statusId,
+                    ])->delete();
+                    $statusMediaCount = StatusMedia::where(['status_id' => $statusId])->count();
+                    if ($statusMediaCount == 0) {
+                        Status::where([
+                            'id' => $statusId,
+                            'user_id' => $authUser->id
+                        ])->delete(); 
+                    }
+                }
                 DB::commit();
                 return true;
             } else {
@@ -176,5 +240,78 @@ class UserStatusRepository
             DB::rollBack();
             return false;
         }
+    }
+
+    /**
+     * statusViewUpdate
+     *
+     * @param  mixed $request
+     * @return obj
+     */
+    public static function statusViewUpdate(Request $request)
+    {
+        try {
+            $authUser = $request->get('Auth');
+            
+            // $statusView = new StatusView();
+            // $statusView->status_id = $request->input('status_id', false);
+            // $statusView->status_media_id = $request->input('status_media_id', false);
+            // $statusView->view_user_id = $authUser->id;
+
+            $statusId = $request->input('status_id', false);
+            $statusMediaId = $request->input('status_media_id', false);
+            $status = Status::where(['id' => $statusId])->first();
+            $statusMedia = StatusMedia::where(['id' => $statusMediaId, 'status_id' => $statusId])->first();
+            if ($status && $statusMedia) {
+                if ($status->user_id == $authUser->id) {
+                    StatusMedia::where('id', $statusMediaId)
+                    ->update([
+                        'owner_view' => 1
+                    ]);
+                } else {
+                    StatusView::updateOrCreate(
+                        [
+                            'status_media_id' => $statusMediaId,
+                            'view_user_id' => $authUser->id
+                        ],
+                        [
+                            'status_id' => $statusId,
+                            'status_media_id' => $statusMediaId,
+                            'view_user_id' => $authUser->id
+                        ]
+                    );
+                }
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception $e) {
+            // dd($e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * statusViewList
+     *
+     * @param  mixed $request
+     * @return obj
+     */
+    public static function statusViewList(Request $request)
+    {
+        $authUser = $request->get('Auth');
+        $statusId = $request->input('status_id', false);
+        $statusMediaId = $request->input('status_media_id', false);
+        $query = StatusView::where([
+            'status_views.status_id' => $statusId,
+            'status_views.status_media_id' => $statusMediaId
+        ])
+        ->with([
+            'viewer' => function ($q) {
+                return $q->select('id', 'name', 'profile_image');
+            },
+        ]);
+        $userStatus = $query->orderBy('status_views.id', 'desc')->get();     
+        return $userStatus;
     }
 }

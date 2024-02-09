@@ -40,8 +40,8 @@ class PayoutController extends Controller
         // http_response_code(200); // Always respond with a 200 OK status
 
         $payload = @file_get_contents('php://input');
+        Log::channel('payout')->info("payout Webhook payload - $payload");
         $data = json_decode($payload, true);
-        Log::channel('payout')->info("payout Webhook payload - $data.");
         // Verify the webhook event using the Razorpay signature
         $webhook_secret = 'Be95Ltp4yaeRV3x7fqzMCeOdZz7gVrj1'; // Replace with your actual webhook secret
         $signature = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'];
@@ -61,40 +61,35 @@ class PayoutController extends Controller
         if (!empty($data['event'])) {
             $payoutId = $data['payload']['payout']['entity']['id'];
             $payoutData = RazorPayPayout::where('payout_id', $payoutId)->first();
-            if ($data['event'] === 'payout.processed') { // Perform actions of the payout processed status
+            $userEarningUpdate = [
+                'user_payout_id' => $payoutData->id,
+                'user_id' => $payoutData->user_id
+            ];
+            // Perform actions of the payout processed status
+            if ($data['event'] === 'payout.processed' || $data['event'] === 'payout.updated') {
                 $payoutData->status = 'complete';
-                // update database 
+                // update database
                 $payoutData->save();
-            } elseif ($data['event'] === 'payout.reversed') { // Perform actions of the payout reversed status
+                UserEarning::where($userEarningUpdate)->update(['status' => 1]);
+                // Perform actions of the payout reversed status
+            } elseif ($data['event'] === 'payout.reversed' || $data['event'] === 'payout.initiated') {
                 $payoutData = RazorPayPayout::where('payout_id', $payoutId)->first();
-                $payoutData->status = 'in-progress';
-                // update database 
+                $payoutData->status = 'processing';
+                // update database
                 $payoutData->save();
-                
-            } elseif ($data['event'] === 'payout.initiated') { // Perform actions of the payout initiated status
-                $payoutData = RazorPayPayout::where('payout_id', $payoutId)->first();
-                $payoutData->status = 'in-progress';
-                // update database 
-                $payoutData->save();
-                
-            } elseif ($data['event'] === 'payout.updated') { // Perform actions of the payout updated status
-                $payoutData = RazorPayPayout::where('payout_id', $payoutId)->first();
-                $payoutData->status = 'complete';
-                // update database 
-                $payoutData->save();
-                
+                UserEarning::where($userEarningUpdate)->delete();
             } elseif ($data['event'] === 'payout.rejected') { // Perform actions of the payout rejected status
                 $payoutData = RazorPayPayout::where('payout_id', $payoutId)->first();
                 $payoutData->status = 'cancelled';
-                // update database 
+                // update database
                 $payoutData->save();
-                
+                UserEarning::where($userEarningUpdate)->delete();
             } elseif ($data['event'] === 'payout.pending') { // Perform actions of the payout pending status
                 $payoutData = RazorPayPayout::where('payout_id', $payoutId)->first();
                 $payoutData->status = 'pending';
-                // update database 
+                // update database
                 $payoutData->save();
-                
+                UserEarning::where($userEarningUpdate)->delete();
             }
             $user = User::where('id', $payoutData->user_id)->first();
             // send notifications

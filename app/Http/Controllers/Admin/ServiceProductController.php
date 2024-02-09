@@ -14,52 +14,32 @@ class ServiceProductController extends Controller
     /**
      * Display a listing of the total service.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\View\Factory
      */
     public function getTotalService(Request $request)
     {
-        $users = User::leftJoin('service_products', 'service_products.user_id', 'users.id')
-            ->select(
-                'users.*',
-                'service_products.id as service_product_id',
-                'service_products.title',
-                'service_products.price',
-                'service_products.status as product_status',
-                'service_products.created_at as service_added',
-            )
-            ->whereNotNull('service_products.title')
-            ->whereNull('service_products.deleted_at')
+        $serviceProduct = ServiceProduct::with('serviceUser')
             ->sortable(['created_at' => 'desc'])
             ->filter($request->query('keyword'))
             ->paginate(config('get.ADMIN_PAGE_LIMIT'));
-        // dd($users);
-        return view('Admin.serviceProduct.totalService', compact('users'));
+        return view('Admin.serviceProduct.totalService', compact('serviceProduct'));
     }
 
     /**
      * Display a listing of the mark re kyc.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\View\Factory
      */
     public function getDeletedService(Request $request)
     {
-        $users = User::leftJoin('service_products', 'service_products.user_id', 'users.id')
-            ->select(
-                'users.*',
-                'service_products.id as service_product_id',
-                'service_products.title',
-                'service_products.price',
-                'service_products.status as product_status',
-                'service_products.created_at as service_added',
-            )
-            ->whereNotNull('service_products.deleted_at')
+        $serviceProduct = ServiceProduct::onlyTrashed()
+            ->with('serviceUser')
             ->sortable(['created_at' => 'desc'])
             ->filter($request->query('keyword'))
             ->paginate(config('get.ADMIN_PAGE_LIMIT'));
-
-        return view('Admin.serviceProduct.deletedService', compact('users'));
+        return view('Admin.serviceProduct.deletedService', compact('serviceProduct'));
     }
-    
+
 
     /**
      * Display a listing of the mark re kyc.
@@ -90,7 +70,7 @@ class ServiceProductController extends Controller
             ->first();
         return view('Admin.serviceProduct.show', compact('user'));
     }
-    
+
     /**
      * serviceProductDelete
      *

@@ -22,7 +22,11 @@ class NotificationRepository
     {
         try {
             $notification = new Notification();
-            $notification->user_id = $user->id;
+            if (!empty($user)) {
+                $notification->user_id = $user->id;
+            } else {
+                $notification->user_id = 0;
+            }
             if (!empty($notificationType)) {
                 switch ($notificationType) {
                     case 'property':

@@ -28,8 +28,8 @@ Route::group(['namespace' => 'Api\V1', 'as' => 'api.', 'middleware' => ['api.hea
   Route::post('/check-phone-number', [UsersController::class, 'checkPhoneNumber']);
   Route::post('/check-username', [UsersController::class, 'checkUsername']);
   Route::post('/register', [UsersController::class, 'register']);
-  
-  
+
+
   // File Upload
   Route::post('/upload-document', [CommonController::class, 'uploadDocument']);
   Route::post('/check-notification', [CommonController::class, 'checkNotification']);
@@ -47,8 +47,9 @@ Route::group(['namespace' => 'Api\V1', 'as' => 'api.', 'middleware' => ['api.hea
     Route::post('/fcm-update', [UsersController::class, 'updateFcmUpdate']);
     Route::post('/spam-reported', [UsersController::class, 'spamReported']);
     Route::post('/logout', [UsersController::class, 'logout']);
+    Route::post('/remove-user', [UsersController::class, 'removeUser']);
 
-    // User Sponsors  
+    // User Sponsors
     Route::post('/get-user-level', [UsersController::class, 'getUserLevel']);
     Route::get('/my-referrals', [UsersController::class, 'myReferrals']);
     Route::get('/sponsors-history', [UsersController::class, 'sponsorsHistory']);
@@ -67,7 +68,10 @@ Route::group(['namespace' => 'Api\V1', 'as' => 'api.', 'middleware' => ['api.hea
     Route::post('/get-recent-search', [CommonController::class, 'getRecentSearch']);
     Route::get('/page-list', [CommonController::class, 'pageList']);
     Route::get('/page/{slug}', [CommonController::class, 'getPage']);
-    
+    // Marketing List
+    Route::post('/marketing-list', [CommonController::class, 'marketingList']);
+    Route::get('/marketing-banner', [CommonController::class, 'marketingBanner']);
+
     // Kyc Routes
     Route::post('/add-kyc', [KycController::class, 'addKyc']);
     Route::get('/get-kyc', [KycController::class, 'getKyc']);
@@ -111,16 +115,18 @@ Route::group(['namespace' => 'Api\V1', 'as' => 'api.', 'middleware' => ['api.hea
     Route::get('/check-user-subscribe', [SubscriptionsController::class, 'checkUserSubscribe']);
     Route::post('/payment-request', [SubscriptionsController::class, 'paymentRequest']);
     Route::post('/check-payment-status', [SubscriptionsController::class, 'checkPaymentStatus']);
-    
+    Route::post('/check-cc-payment-status', [SubscriptionsController::class, 'ccCheckPaymentStatus']);
+
     // Payout Route
     Route::post('/payout-request', [SubscriptionsController::class, 'payoutRequest']);
     Route::get('/check-payout', [SubscriptionsController::class, 'checkPayout']);
 
     // User Status Routes
     Route::post('/create-user-status', [UserStatusController::class, 'createUserStatus']);
-    Route::post('/update-user-status', [UserStatusController::class, 'updateUserStatus']);
     Route::post('/get-user-status', [UserStatusController::class, 'getUserStatus']);
-    Route::post('/delete-user-status', [UserStatusController::class, 'deleteCustomer']);
-    
+    Route::post('/delete-user-status', [UserStatusController::class, 'deleteStatus']);
+    Route::post('/status-view', [UserStatusController::class, 'statusView']);
+    Route::post('/my-status', [UserStatusController::class, 'myStatus']);
+    Route::post('/status-view-list', [UserStatusController::class, 'statusViewList']);
   });
 });

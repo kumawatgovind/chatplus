@@ -27,7 +27,7 @@ class KycController extends Controller
                 $postResponse = KycRepository::getSingle($request, $document->id);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('post_save');
+                $data['message'] = ApiGlobalFunctions::messageDefault('save_records');
                 $data['data'] = $postResponse;
             } else {
                 $data['status'] = false;

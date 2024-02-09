@@ -175,7 +175,25 @@ class sendNotification extends Command
 					}
 					break;
 				case 'admin_marketing':
-					
+					$users = UserRepository::getUsers();
+					$title = $config['admin_marketing']['title'];
+					$message = $config['admin_marketing']['message'];
+					if ($users->count() > 0) {
+						foreach ($users as $user) {
+							if (!empty($user->fcm_token)) {
+								$reqData = [
+									'fcm_token' => $user->fcm_token,
+									'notification_title' => $title,
+									'notification_message' => $message,
+									'notification_type' => $notification->type,
+									'notification_sub_type' => '',
+									'notification_item_id' => ''
+								];
+								ApiGlobalFunctions::sendNotification($reqData);
+							}
+						}
+					}
+					Log::channel('notification')->info("notification type - $notification->type. End Sending");
 					break;
 				case 'admin_block':
 					$user = UserRepository::getUser($notification->user_id);

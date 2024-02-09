@@ -61,12 +61,42 @@ class RazorPayRepository
                 }
             } else {
                 $contactDetail = json_decode($razorPayContact->contacts, true);
-                // self::fundAccount($user,$contactDetail, $payoutAmount);
-                return [
-                    'contactStatus' => true,
-                    'message' => 'Create payout contact successfully.',
-                    'contactData' => $contactDetail
-                ];
+                if (isset($contactDetail['error'])) {
+                    $razorPayContact->user_id = $authUser->id;
+                    $contactData = [
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'contact' => $user->phone_number,
+                        'type' => 'employee',
+                    ];
+                    $createContact = Helper::curlRequest($contactData, 'contacts');
+                    $razorPayContact->contacts = $contactResponse = $createContact['response'];
+                    $contactDetail = json_decode($contactResponse, true);
+                    if (isset($contactDetail['error'])) {
+                        $razorPayContact->save();
+                        return [
+                            'contactStatus' => false,
+                            'message' => 'Payout error.',
+                            'error' => $contactDetail['error']['description']
+                        ];
+                    } else {
+                        $razorPayContact->payout_contact_id = $contactDetail['id'];
+                        if ($razorPayContact->save()) {
+                            // self::fundAccount($user, $contactDetail, $payoutAmount);
+                            return [
+                                'contactStatus' => true,
+                                'message' => 'Create payout contact successfully.',
+                                'contactData' => $contactDetail
+                            ];
+                        }
+                    }
+                } else {
+                    return [
+                        'contactStatus' => true,
+                        'message' => 'Create payout contact successfully.',
+                        'contactData' => $contactDetail
+                    ];
+                }
             }
             
         } catch (Exception $e) {
@@ -293,7 +323,7 @@ class RazorPayRepository
                             return [
                                 'payoutStatus' => true,
                                 'message' => 'Payout initiated successfully.',
-                                'payoutData' => $payoutDetail
+                                'payoutData' => $razorPayPayout
                             ];
                         }
                     } else {

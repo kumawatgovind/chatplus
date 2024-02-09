@@ -24,28 +24,83 @@ class ServiceProductsController extends Controller
      * createServiceProduct
      *
      * @param  mixed $request
-     * @return void
+     * @return \Illuminate\Http\Response
      */
     public static function createServiceProduct(Request $request)
     {
         $data = [];
         try {
             $user = $request->get('Auth');
-            // dd($request->all());
-            // $validator = (object) Validator::make($request->all(), [
-            //     'post_type' => 'required',
-            //     'content' => 'nullable',
-            //     'post_visibility' => 'required',
-            // ]);
-            // if ($validator->fails()) {
-            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            // }
+            $productType = $request->input('product_type', false);
+            $productFor = $request->input('product_for', false);
+            if ($productType == 'Other') {
+                $validationObj = [
+                    'product_for' => 'required',
+                    'category_id' => 'required',
+                    'sub_category_id' => 'required',
+                    'title' => 'required',
+                    'locality_id' => 'required',
+                    'city_id' => 'required',
+                    'state_id' => 'required',
+                    'price' => 'required',
+                    'service_product_images' => 'required',
+                    'property_attribute.property_condition' => 'required',
+                ];
+            } elseif ($productType == 'Property' && $productFor == 'Requirement') {
+                $validationObj = [
+                    'product_for' => 'required',
+                    'category_id' => 'required',
+                    'sub_category_id' => 'required',
+                    'locality_id' => 'required',
+                    'city_id' => 'required',
+                    'state_id' => 'required',
+                    'price' => 'required',
+                    'property_attribute.property_requirement' => 'required',
+                    'property_attribute.property_category' => 'required',
+                    'property_attribute.property_category_type' => 'required',
+                    'property_attribute.property_carpet_area' => 'required',
+                    'property_attribute.carpet_area_unit' => 'required',
+                ];
+
+            } elseif ($productType == 'Property' && $productFor != 'Requirement') {
+                $validationObj = [
+                    'product_type' => 'required',
+                    'product_for' => 'required',
+                    'category_id' => 'required',
+                    'sub_category_id' => 'required',
+                    'locality_id' => 'required',
+                    'city_id' => 'required',
+                    'state_id' => 'required',
+                    'price' => 'required',
+                    'service_product_images' => 'required',
+                    'property_attribute.property_category' => 'required',
+                    'property_attribute.property_category_type' => 'required',
+                    'property_attribute.property_facing' => 'required',
+                    'property_attribute.property_status' => 'required',
+                    'property_attribute.property_carpet_area' => 'required',
+                    'property_attribute.carpet_area_unit' => 'required',
+                    'property_attribute.property_super_area' => 'required',
+                    'property_attribute.super_area_unit' => 'required',
+                    'property_attribute.property_length' => 'required',
+                    'property_attribute.length_unit' => 'required',
+                    'property_attribute.property_breadth' => 'required',
+                    'property_attribute.breadth_unit' => 'required',
+                ];
+            } else {
+                $validationObj = [
+                    'product_type' => 'required',
+                ];
+            }
+            $validator = (object) Validator::make($request->all(), $validationObj);
+            if ($validator->fails()) {
+                return ApiGlobalFunctions::sendError('Validation Error.', $validator->errors()->first(), 200);
+            }
             if ($serviceProduct = ServiceProductRepository::createUpdate($request)) {
                 $postResponse = ServiceProductRepository::getSingle($serviceProduct->id, $user);
                 NotificationRepository::createNotification($postResponse, $user, 'property');
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('post_save');
+                $data['message'] = ApiGlobalFunctions::messageDefault('save_records');
                 $data['data'] = $postResponse;
             } else {
                 $data['status'] = false;
@@ -54,7 +109,7 @@ class ServiceProductsController extends Controller
             }
         } catch (Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -67,25 +122,86 @@ class ServiceProductsController extends Controller
      * updateServiceProduct
      *
      * @param  mixed $request
-     * @return void
+     * @return \Illuminate\Http\Response
      */
     public static function updateServiceProduct(Request $request)
     {
         $data = [];
         try {
             $user = $request->get('Auth');
-            // dd($request->all());
-            $validator = (object) Validator::make($request->all(), [
-                'service_id' => 'required',
-            ]);
+            $productType = $request->input('product_type', false);
+            $productFor = $request->input('product_for', false);
+            if ($productType == 'Other') {
+                $validationObj = [
+                    'service_id' => 'required',
+                    'product_for' => 'required',
+                    'category_id' => 'required',
+                    'sub_category_id' => 'required',
+                    'title' => 'required',
+                    'locality_id' => 'required',
+                    'city_id' => 'required',
+                    'state_id' => 'required',
+                    'price' => 'required',
+                    'service_product_images' => 'required',
+                    'property_attribute.property_condition' => 'required',
+                ];
+            } elseif ($productType == 'Property' && $productFor == 'Requirement') {
+                $validationObj = [
+                    'service_id' => 'required',
+                    'product_for' => 'required',
+                    'category_id' => 'required',
+                    'sub_category_id' => 'required',
+                    'locality_id' => 'required',
+                    'city_id' => 'required',
+                    'state_id' => 'required',
+                    'price' => 'required',
+                    'property_attribute.property_requirement' => 'required',
+                    'property_attribute.property_category' => 'required',
+                    'property_attribute.property_category_type' => 'required',
+                    'property_attribute.property_carpet_area' => 'required',
+                    'property_attribute.carpet_area_unit' => 'required',
+                ];
+
+            } elseif ($productType == 'Property' && $productFor != 'Requirement') {
+                $validationObj = [
+                    'service_id' => 'required',
+                    'product_type' => 'required',
+                    'product_for' => 'required',
+                    'category_id' => 'required',
+                    'sub_category_id' => 'required',
+                    'locality_id' => 'required',
+                    'city_id' => 'required',
+                    'state_id' => 'required',
+                    'price' => 'required',
+                    'service_product_images' => 'required',
+                    'property_attribute.property_category' => 'required',
+                    'property_attribute.property_category_type' => 'required',
+                    'property_attribute.property_facing' => 'required',
+                    'property_attribute.property_status' => 'required',
+                    'property_attribute.property_carpet_area' => 'required',
+                    'property_attribute.carpet_area_unit' => 'required',
+                    'property_attribute.property_super_area' => 'required',
+                    'property_attribute.super_area_unit' => 'required',
+                    'property_attribute.property_length' => 'required',
+                    'property_attribute.length_unit' => 'required',
+                    'property_attribute.property_breadth' => 'required',
+                    'property_attribute.breadth_unit' => 'required',
+                ];
+            } else {
+                $validationObj = [
+                    'service_id' => 'required',
+                    'product_type' => 'required',
+                ];
+            }
+            $validator = (object) Validator::make($request->all(), $validationObj);
             if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+                return ApiGlobalFunctions::sendError('Validation Error.', $validator->errors()->first(), 200);
             }
             if ($serviceProduct = ServiceProductRepository::createUpdate($request)) {
                 $postResponse = ServiceProductRepository::getSingle($serviceProduct->id, $user);
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('post_save');
+                $data['message'] = ApiGlobalFunctions::messageDefault('save_records');
                 $data['data'] = $postResponse;
             } else {
                 $data['status'] = false;
@@ -94,7 +210,7 @@ class ServiceProductsController extends Controller
             }
         } catch (Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -141,7 +257,7 @@ class ServiceProductsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -152,7 +268,7 @@ class ServiceProductsController extends Controller
     }
 
     /**
-     * getServiceProduct
+     * getServiceProducts
      *
      * @param  mixed $request
      * @return void
@@ -175,7 +291,7 @@ class ServiceProductsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -207,7 +323,7 @@ class ServiceProductsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -245,7 +361,7 @@ class ServiceProductsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -278,7 +394,7 @@ class ServiceProductsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -317,7 +433,7 @@ class ServiceProductsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {

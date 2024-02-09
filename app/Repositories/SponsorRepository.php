@@ -29,23 +29,41 @@ class SponsorRepository
         $sponsorUserId = 0;
         if ($request->input('referral_code', false)) {
             $user = User::where('referral_code', $request->input('referral_code', false))
-                ->where('id', '!=', $sponsorUserId)->first();
+                ->where('id', '!=', $sponsoredUserId)->first();
             $sponsorUserId = $user->id;
         }
-        $sponsoredUser = Sponsor::where('sponsored_user_id', $sponsoredUserId)->first();
+
+        $sponsoredUser = Sponsor::where([
+            'sponsored_user_id' => $sponsoredUserId,
+            'status' => 1
+        ])->orderBy('id', 'DESC')->first();
         if (empty($sponsoredUser)) {
-            $sponsor = new Sponsor();
-            $sponsor->sponsor_user_id = $sponsorUserId;
-            $sponsor->sponsored_user_id = $sponsoredUserId;
-            if ($sponsor->save()) {
+            $sponsoredUserNotCompleted = Sponsor::where([
+                'sponsored_user_id' => $sponsoredUserId,
+                'status' => 0
+            ])->orderBy('id', 'DESC')->first();
+            if (!empty($sponsoredUserNotCompleted)) {
                 $response['status'] = true;
                 $response['message'] = 'User referred successfully.';
-                $response['sponsorData'] = $sponsor;
+                $response['sponsorData'] = $sponsoredUserNotCompleted;
             } else {
-                $response['status'] = false;
-                $response['message'] = 'User not able to refer.';
+                $sponsor = new Sponsor();
+                $sponsor->sponsor_user_id = $sponsorUserId;
+                $sponsor->sponsored_user_id = $sponsoredUserId;
+                if ($sponsor->save()) {
+                    $response['status'] = true;
+                    $response['message'] = 'User referred successfully.';
+                    $response['sponsorData'] = $sponsor;
+                } else {
+                    $response['status'] = false;
+                    $response['message'] = 'User not able to refer.';
+                }
             }
         } else {
+            // $response['status'] = true;
+            // $response['message'] = 'User referred successfully.';
+            // $response['sponsorData'] = $sponsoredUser;
+            /* for testing bypass the already sponsored message */
             $response['status'] = false;
             $response['message'] = 'User already sponsored.';
         }
@@ -88,6 +106,7 @@ class SponsorRepository
         $authUser = $request->get('Auth');
         $sponsorDetail = Sponsor::with(['userSponsored', 'userSponsored.userEarnings', 'userSponsored.userSponsor'])
             ->where('sponsor_user_id', $authUser->id)
+            ->where('status', '>', 0)
             ->get();
         // dd($sponsorDetail);
         if (!empty($sponsorDetail)) {
@@ -111,7 +130,7 @@ class SponsorRepository
         }
         return $response;
     }
-  
+
     /**
      * getSponsorsHistory
      *
@@ -125,18 +144,19 @@ class SponsorRepository
         $sponsorDetail = UserEarning::with([
             'sponsor',
             'sponsor.userSponsor',
-            'sponsor.userSponsored'])
+            'sponsor.userSponsored'
+        ])
             ->where('user_id', $authUser->id)
             ->get();
         if ($sponsorDetail->count() > 0) {
             $mySponsored = [];
             foreach ($sponsorDetail as $sponsor) {
-                $mySponsored[] = 
-                [
-                   'earning' => $sponsor->earning,
-                   'user_sponsors' => $sponsor->sponsor->userSponsor,
-                   'user_sponsored' => $sponsor->sponsor->userSponsored,
-                ];
+                $mySponsored[] =
+                    [
+                        'earning' => $sponsor->earning,
+                        'user_sponsors' => $sponsor->sponsor->userSponsor,
+                        'user_sponsored' => $sponsor->sponsor->userSponsored,
+                    ];
             }
             $response = $mySponsored;
         } else {
@@ -145,7 +165,7 @@ class SponsorRepository
         }
         return $response;
     }
-  
+
     /**
      * getTransactionHistory
      *
@@ -160,10 +180,10 @@ class SponsorRepository
         $sponsoredUser = Sponsor::where([
             'sponsored_user_id' => $authUser->id,
             'status' => 1
-            ])->first();
+        ])->first();
         $subscriptionPayment = SubscriptionPayment::where([
-                'user_id' => $authUser->id,
-                ])->orderBy('id', 'DESC')->get();
+            'user_id' => $authUser->id,
+        ])->orderBy('id', 'DESC')->get();
         // dd($subscriptionPayment);
         $earning = [];
         $mySponsored = [
@@ -175,7 +195,7 @@ class SponsorRepository
             $sponsorEarning = UserEarning::where([
                 'user_id' => $authUser->id,
                 'status' => 1
-                ])
+            ])
                 ->orderBy('created_at', 'DESC')->get();
             // $sponsorDetail = UserEarning::where('sponsor_id', $sponsoredUser->id)
             //     ->orderBy('id', 'ASC')->take(1)->get();
@@ -199,7 +219,7 @@ class SponsorRepository
             $earingSponsor = $earning->merge($subscriptionCol);
         } else {
             $earingSponsor = collect($subscriptionPayment);
-        }   
+        }
         $payment = 0.00;
         // $earingSponsor = $earning;
         if ($earingSponsor->count() > 0) {
@@ -208,7 +228,7 @@ class SponsorRepository
                     // echo "wi";
                     $payment = $sponsor->withdrawal;
                     $transactionType = 'outgoing';
-                }elseif (isset($sponsor->sponsor_id) && isset($sponsor->payment_status)) {
+                } elseif (isset($sponsor->sponsor_id) && isset($sponsor->payment_status)) {
                     $payment = $sponsor->subscription_price;
                     if ($sponsor->payment_status == 'Completed') {
                         $transactionType = 'outgoing';
@@ -226,7 +246,7 @@ class SponsorRepository
                 } elseif ($sponsor->earning > 0 && $sponsor->withdrawal == 0) {
                     // echo "in";
                     $payment = $sponsor->earning;
-                    $transactionType = 'incoming';                   
+                    $transactionType = 'incoming';
                 }
                 $mySponsored['transaction'][] = [
                     'payment' => number_format($payment, 2),

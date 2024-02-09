@@ -122,7 +122,7 @@ class ReferralSystem
         // dump('userLevelArray ', $userLevelArray);
         $subscription = SubscriptionRepository::getSingle($request);
         $responseData['subscription_price'] = $subscriptionPrice = $subscription->price;
-        $responseData['sponsor_id'] = $sponsorData->id;
+        $responseData['sponsor_id'] = $sponsorId = $sponsorData->id;
         $userId = 0;
         if (empty($isReferCodeUser)) {
             // dd($userLevelArray, 'No Refer');
@@ -132,6 +132,7 @@ class ReferralSystem
             $responseData['admin_earning'] = $adminEarning;
             $responseData['type'] = 1;
             UserEarning::insert($responseData);
+            return true;
         } else {
             // dd($userLevelArray, 'Refer');
             $userId = $isReferCodeUser->id;
@@ -158,14 +159,17 @@ class ReferralSystem
                     $i++;
                     UserEarning::insert($userLevelCommission);
                 }
+                return true;
             } else {
+                Sponsor::where('id', $sponsorId)->delete();
                 // dd($userLevelArray, 'No Refer');
-                $responseData['earning'] = 0;
-                $responseData['user_id'] =  $userId;
-                $adminEarning = $subscriptionPrice;
-                $responseData['admin_earning'] = $adminEarning;
-                $responseData['type'] = 1;
-                UserEarning::insert($responseData);
+                // $responseData['earning'] = 0;
+                // $responseData['user_id'] =  $userId;
+                // $adminEarning = $subscriptionPrice;
+                // $responseData['admin_earning'] = $adminEarning;
+                // $responseData['type'] = 1;
+                // UserEarning::insert($responseData);
+                return false;
             }
         }
         

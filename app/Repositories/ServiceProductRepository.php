@@ -27,8 +27,10 @@ class ServiceProductRepository
     {
         DB::beginTransaction();
         try {
+            $isNew = true;
             $authUser = $request->get('Auth');
             if ($serviceProductId = $request->input('service_id', false)) {
+                $isNew = false;
                 $serviceProduct = ServiceProduct::where('id', $serviceProductId)->first();
             } else {
                 $serviceProduct = new ServiceProduct();
@@ -72,8 +74,12 @@ class ServiceProductRepository
                     }
                 }
                 if (!empty($propertyAttribute)) {
-                    $propertyAttributeObj = new PropertyAttribute();
-                    $propertyAttributeObj->service_product_id = $serviceProduct->id;
+                    if ($isNew) {
+                        $propertyAttributeObj = new PropertyAttribute();
+                        $propertyAttributeObj->service_product_id = $serviceProduct->id;
+                    } else {
+                        $propertyAttributeObj = PropertyAttribute::where('service_product_id', $request->input('service_id', false))->first();
+                    }
                     if ($serviceProductType == 'Other') {
                         $propertyAttributeObj->property_condition = $propertyAttribute['property_condition'] ?? 0;
                     } else {
@@ -120,7 +126,7 @@ class ServiceProductRepository
      */
     public static function getSingle($serviceProductId, $user = [])
     {
-        $query = ServiceProduct::status()->with([
+        $query = ServiceProduct::with([
             'category' => function ($q) {
                 $q->select('id', 'name', 'icon');
             }, 'subCategory' => function ($q) {
@@ -151,27 +157,28 @@ class ServiceProductRepository
                 $q->select('id', 'name');
             }
         ]);
-
         $query = $query->where('id', $serviceProductId);
         $serviceProductData = $query->first();
-        if (!empty($serviceProductData->serviceProductImage)) {
-            $responseImage = [];
-            foreach ($serviceProductData->serviceProductImage as $serviceProductImage) {
-                $responseImage[] = $serviceProductImage->name;
+        if (!empty($serviceProductData)) {
+            if (!empty($serviceProductData->serviceProductImage)) {
+                $responseImage = [];
+                foreach ($serviceProductData->serviceProductImage as $serviceProductImage) {
+                    $responseImage[] = $serviceProductImage->name;
+                }
+                unset($serviceProductData->serviceProductImage);
+                $serviceProductData->serviceProductImages = $responseImage;
             }
-            unset($serviceProductData->serviceProductImage);
-            $serviceProductData->serviceProductImages = $responseImage;
-        }
-        if (!empty($serviceProductData->serviceUser->userServicesProfile->serviceImages)) {
-            $responseServiceImage = [];
-            foreach ($serviceProductData->serviceUser->userServicesProfile->serviceImages as $serviceImage) {
-                $responseServiceImage[] = $serviceImage->name;
+            if (!empty($serviceProductData->serviceUser->userServicesProfile->serviceImages)) {
+                $responseServiceImage = [];
+                foreach ($serviceProductData->serviceUser->userServicesProfile->serviceImages as $serviceImage) {
+                    $responseServiceImage[] = $serviceImage->name;
+                }
+                unset($serviceProductData->serviceUser->userServicesProfile->serviceImages);
+                $serviceProductData->serviceUser->userServicesProfile->serviceImages = $responseServiceImage;
             }
-            unset($serviceProductData->serviceUser->userServicesProfile->serviceImages);
-            $serviceProductData->serviceUser->userServicesProfile->serviceImages = $responseServiceImage;
-        }
-        if (!empty($user)) {
-            $serviceProductData->is_bookmark = $serviceProductData->is_bookmarked($user);
+            if (!empty($user)) {
+                $serviceProductData->is_bookmark = $serviceProductData->is_bookmarked($user);
+            }
         }
         return $serviceProductData;
     }
@@ -395,7 +402,7 @@ class ServiceProductRepository
         }
         $user = $request->get('Auth');
         $query = ServiceProduct::whereHas('userServiceProductBookmark', function ($q) use ($user) {
-            $q->where('user_id', '=', $user->id);
+            $q->where('service_product_bookmark.user_id', '=', $user->id);
         })->with([
             'category' => function ($q) {
                 $q->select('id', 'name', 'icon');
@@ -431,8 +438,7 @@ class ServiceProductRepository
             $categoryId  = $request->input('category_id', 0);
             $query = $query->where('category_id', $categoryId);
         }
-        $serviceProducts = $query->orderBy('id', 'desc')->paginate($limit);
-
+        $serviceProducts = $query->status()->orderBy('id', 'desc')->paginate($limit);
         if (!empty($serviceProducts)) {
             foreach ($serviceProducts as $sKey => $serviceProduct) {
                 if (!empty($serviceProduct->serviceProductImage)) {

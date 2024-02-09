@@ -23,21 +23,12 @@ class UserStatusController extends Controller
     {
         $data = [];
         try {
-            // dd($request->all());
-            // $validator = (object) Validator::make($request->all(), [
-            //     'post_type' => 'required',
-            //     'content' => 'nullable',
-            //     'post_visibility' => 'required',
-            // ]);
-            // if ($validator->fails()) {
-            //     return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            // }
             $response = UserStatusRepository::create($request);
             if ($response['status']) {
-                $postResponse = UserStatusRepository::getSingle($response['data']->id);
+                $postResponse = UserStatusRepository::myStories($request);;
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('post_save');
+                $data['message'] = ApiGlobalFunctions::messageDefault('save_records');
                 $data['data'] = $postResponse;
             } else {
                 $data['status'] = false;
@@ -61,110 +52,26 @@ class UserStatusController extends Controller
     }
 
     /**
-     * updateProduct
+     * getUserStatus
      *
      * @param  mixed $request
      * @return void
      */
-    public static function updateProduct(Request $request)
-    {
-        $data = [];
-        try {
-            // dd($request->all());
-            $validator = (object) Validator::make($request->all(), [
-                'product_id' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            }
-            if ($product = ProductRepository::update($request)) {
-                $productId = $request->input('product_id', false);
-                $postResponse = ProductRepository::getSingle($productId);
-                $data['status'] = true;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('save_records');
-                $data['data'] = $postResponse;
-            } else {
-                $data['status'] = false;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        } catch (Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
-
-    /**
-     * getProduct
-     *
-     * @param  mixed $request
-     * @return void
-     */
-    public function getProduct(Request $request)
+    public function getUserStatus(Request $request)
     {
         $data = [];
         $user = $request->get('Auth');
         try {
-            $validator = (object) Validator::make($request->all(), [
-                'service_product_id' => 'nullable',
-            ]);
-            if ($validator->fails()) {
-                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
-            }
-            $serviceProductId = $request->input('product_id', 0);
-            if ($serviceProductId > 0) {
-                $postResponse = ProductRepository::getSingle($serviceProductId);
-                if (!empty($postResponse)) {
-                    $data['status'] = true;
-                    $data['code'] = config('response.HTTP_OK');
-                    $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
-                    $data['data'] = $postResponse;
-                } else {
-                    $data['status'] = false;
-                    $data['code'] = config('response.HTTP_OK');
-                    $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
-                }
-            } else {
-                $data['status'] = false;
-                $data['code'] = config('response.HTTP_OK');
-                $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
-            }
-        } catch (\Exception $e) {
-            $data['status'] = false;
-            $data['code'] =  $e->getCode();
-            if (config('constants.DEBUG_MODE')) {
-                $data['message'] = 'Error: ' . $e->getMessage();
-            } else {
-                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
-            }
-        }
-        return ApiGlobalFunctions::responseBuilder($data);
-    }
-
-    /**
-     * getProducts
-     *
-     * @param  mixed $request
-     * @return void
-     */
-    public function getProducts(Request $request)
-    {
-        $data = [];
-        $user = $request->get('Auth');
-        try {
-            $serviceResponse = ProductRepository::list($request);
-            if (!empty($serviceResponse)) {
+            $myStoriesResponse = UserStatusRepository::myStories($request);
+            $friendsStoriesResponse = UserStatusRepository::friendsStories($request);
+            if (!empty($friendsStoriesResponse) || !empty($myStoriesResponse)) {
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
-                $data['data'] = $serviceResponse;
+                $data['data'] = [
+                    'myStories' => $myStoriesResponse,
+                    'friendsStories' => $friendsStoriesResponse
+                ];
             } else {
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
@@ -183,16 +90,50 @@ class UserStatusController extends Controller
     }
 
     /**
-     * deleteProduct
+     * myStatus
      *
      * @param  mixed $request
      * @return void
      */
-    public function deleteProduct(Request $request)
+    public function myStatus(Request $request)
+    {
+        $data = [];
+        $user = $request->get('Auth');
+        try {
+            $myStoriesResponse = UserStatusRepository::myStories($request);
+            if (!empty($myStoriesResponse)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] =  $myStoriesResponse;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /**
+     * deleteStatus
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public function deleteStatus(Request $request)
     {
         $data = [];
         try {
-            if (ProductRepository::deleteProduct($request)) {
+            if (UserStatusRepository::deleteStatus($request)) {
                 $data['status'] = true;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('records_delete');
@@ -213,4 +154,73 @@ class UserStatusController extends Controller
         }
         return ApiGlobalFunctions::responseBuilder($data);
     }
+
+    /**
+     * statusView
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public function statusView(Request $request)
+    {
+        $data = [];
+        try {
+            if (UserStatusRepository::statusViewUpdate($request)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('update_successfully');
+                $data['data'] = [];
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /**
+     * statusViewList
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public function statusViewList(Request $request)
+    {
+        $data = [];
+        try {
+            $statusViewList = UserStatusRepository::statusViewList($request);
+            if ($statusViewList->count() > 0) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('update_successfully');
+                $data['data'] = [
+                    'count' => $statusViewList->count(),
+                    'list' => $statusViewList,
+                ];
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
 }

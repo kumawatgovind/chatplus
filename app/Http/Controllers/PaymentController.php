@@ -10,6 +10,7 @@ use App\Models\SubscriptionPayment;
 use App\Models\UserSubscription;
 use App\Models\Sponsor;
 use App\Models\UserEarning;
+use Illuminate\Support\Facades\Log;
 use Stripe;
 
 class PaymentController extends Controller
@@ -40,6 +41,7 @@ class PaymentController extends Controller
         $endpoint_secret = config('constants.STRIPE_WEBHOOK_SECRET');
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+        Log::channel('stripPayment')->info("Strip Payment Webhook payload - $payload".json_encode($_SERVER));
         $event = null;
 
         try {
@@ -86,6 +88,7 @@ class PaymentController extends Controller
         } elseif ($event->type == "payment_intent.payment_failed") {
             //Payment failed to be completed
             $intentObj = $event->data->object;
+            $clientSecret = $intentObj->client_secret;
             $subscriptionPayment = SubscriptionPayment::where('payment_intent_id', $clientSecret)->first();
             if ($subscriptionPayment) {
                 $subscriptionPayment->is_payment = 0;
@@ -93,8 +96,10 @@ class PaymentController extends Controller
                 $subscriptionPayment->save();
                 $userSubscriptionId = $subscriptionPayment->user_subscription_id;
                 $userSubscriptionObj = UserSubscription::where('id', $userSubscriptionId)->first();
-                $userSubscriptionObj->is_active = 0;
-                $userSubscriptionObj->save();
+                if ($userSubscriptionObj) {
+                    $userSubscriptionObj->is_active = 0;
+                    $userSubscriptionObj->save();
+                }
                 $sponsorId = $subscriptionPayment->sponsor_id;
                 Sponsor::where('id', $sponsorId)->delete();
                 UserEarning::where('sponsor_id', $sponsorId)->delete();

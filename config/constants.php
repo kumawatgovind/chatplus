@@ -188,7 +188,7 @@ $kycStatus = [
 $transactionType = [
     0 => 'Other',
     1 => 'Refer',
-    2 => 'Bank transfer',
+    2 => 'Bank Transfer',
     3 => 'Prime Subscription',
     4 => 'Subscription In-Progress',
     5 => 'Subscription Canceled',
@@ -247,6 +247,10 @@ $notificationMessage = [
         'title' => 'Kyc Update',
         'message' => 'Your Kyc successfully verified with us.'
     ],
+    'admin_marketing' => [
+        'title' => 'Promotion Material',
+        'message' => 'Chatplus post new promotional material. Tap to see, its useful for you.'
+    ],
 ];
 return [
     'DEBUG_MODE' => TRUE,
@@ -264,13 +268,22 @@ return [
     'COMMISSION_PERCENTAGES' => $commissionPercentages,
     'KYC_STATUS' => $kycStatus,
     'TRANSACTION_TYPE' => $transactionType,
-    'MINIMUM_PAYOUT' => 100,
+    'MINIMUM_PAYOUT' => 500,
     'PAYOUT_URL' => 'https://api.razorpay.com/v1/',
     'PAYOUT_KEY_ID' => env('PAYOUT_KEY_ID'),
     'PAYOUT_KEY_SECRET' => env('PAYOUT_KEY_SECRET'),
     'PAYMENT_MODE' => 'IMPS',
     'PAYMENT_PURPOSE' => 'payout',
-    'PAYOUT_ACCOUNT_NUMBER' => '2323230025300756',
+    'PAYOUT_ACCOUNT_NUMBER' => '409001989978',
     'DEFAULT_COUNTRY' => 1,
-    'NOTIFICATION_MESSAGE' => $notificationMessage
+    'NOTIFICATION_MESSAGE' => $notificationMessage,
+    'TRANSACTION_INIT' => "https://secure.ccavenue.com/transaction/initTrans",
+    'CC_IS_LIVE' => true,
+    'CC_ACCESS_CODE_TEST' => "AVEM24KJ45BU87MEUB",
+    'CC_MERCHANT_ID' => "2955246",
+    'CC_WORKING_KEY_TEST' => "FF618224ED48BA71BE3A13C8861D6352",
+    'CC_ACCESS_CODE' => "AVWL34KK22BU50LWUB",
+    'CC_WORKING_KEY' => "5A7526F8AE68F4FB5C0BE64F36B03947",
+    'LANGUAGE' => "EN",
+    'FIRE_BASE_KEY' => 'AAAA_Pf6c8o:APA91bGb1Iqnyr5ol51mWRkOeczcEFT9Hm1tfJ1ppPJ39ey4HJotoaOIb-SloVUDxk7V6AQ4drRsEKfURLM9surWnNL29RkmWTeOVhJz531Lq4CUR3ZAKxS3EVbBYwDBhGz12AxoDvVe'
 ];

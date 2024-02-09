@@ -80,11 +80,16 @@
             <!-- Menu Body -->
             <li class="user-body">
               <div class="row">
+                <div class="col-4 text-center">
+                  <a href="{{ route('frontend.clear-data') }}" onclick="return confirm('Are you sure. You want to clear all data?')">Clear Data</a>
+                </div>
+                {{--
                 @can('check-user', "settings-index")
                 <div class="col-4 text-center">
                   <a href="{{ route('admin.settings.index') }}">Settings</a>
                 </div>
                 @endcan
+                --}}
                 <div class="col-8 text-center">
                   <a href="{{ route('admin.change-password.index') }}">Change Password</a>
                 </div>

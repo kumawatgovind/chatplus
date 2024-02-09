@@ -18,16 +18,14 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Carbon\Carbon;
 
-class DashboardController extends Controller
-{
+class DashboardController extends Controller {
 
     /**
      * Admin Dashboard.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
+    public function index() {
         /* Register Users Statics  */
         $userQuery = new User();
         $userTodayTotal = Helper::thousandsFormat(
@@ -49,19 +47,19 @@ class DashboardController extends Controller
         );
         $userTotal = Helper::thousandsFormat($userQuery->count());
 
-        $payoutTodayTotal = $payoutWeeklyTotal = $payoutMonthTotal =  $payoutTotal = 0;
+        $payoutTodayTotal = $payoutWeeklyTotal = $payoutMonthTotal = $payoutTotal = 0;
 
         /* KYC Document */
         $kycStatus = config('constants.KYC_STATUS');
         $kycFailedTotal = $userQuery->whereHas('kycDocument', function ($q) {
-                            $q->where('is_kyc', 3);
-                        })->count();
+            $q->where('is_kyc', 3);
+        })->count();
         $kycPendingTotal = $userQuery->whereHas('kycDocument', function ($q) {
-                                $q->whereIn('is_kyc', [0,2]);
-                            })->count();
-        $kycTotal = $userQuery->whereHas('kycDocument', function ($q) use($kycStatus) {
-                        $q->whereIn('is_kyc', array_keys($kycStatus));
-                    })->count();
+            $q->whereIn('is_kyc', [0, 2]);
+        })->count();
+        $kycTotal = $userQuery->whereHas('kycDocument', function ($q) use ($kycStatus) {
+            $q->whereIn('is_kyc', array_keys($kycStatus));
+        })->count();
         // dd($kycFailedTotal,$kycPendingTotal,$kycTotal);
         /* Subscribe Users Statics  */
         $subscriptionTodayTotal = Helper::thousandsFormat(
@@ -86,17 +84,22 @@ class DashboardController extends Controller
                 )->where('is_active', 1);
             })->count()
         );
-        $subscriptionTotal = $subscriptionTotalAmount = Helper::thousandsFormat($userQuery->whereHas('userSubscription')->count());
-        $subscriptionTotalAmount = Helper::thousandsFormat(UserSubscription::where('is_active', 1)->sum('subscription_price'));
-        
-        $renewalPending  = Helper::thousandsFormat(
+        $subscriptionTotal = Helper::thousandsFormat(
+            $userQuery->whereHas('userSubscription', function ($q) {
+                $q->where('is_active', 1);
+            })->count());
+        $subscriptionTotalAmount = Helper::thousandsFormat(
+            UserSubscription::where('is_active', 1)->sum('subscription_price')
+        );
+
+        $renewalPending = Helper::thousandsFormat(
             $userQuery->select('users.*', 'user_subscriptions.user_id')
-            ->leftJoin('user_subscriptions', 'user_subscriptions.user_id', '=', 'users.id')
-            ->whereNull('user_subscriptions.user_id')->count()
+                ->leftJoin('user_subscriptions', 'user_subscriptions.user_id', '=', 'users.id')
+                ->whereNull('user_subscriptions.user_id')->count()
         );
         $topSellerEarning = $userQuery->withCount([
             'userEarnings' => function ($query) {
-                $query->select(DB::raw("SUM(earning)"));
+                $query->select(DB::raw("SUM(earning)"))->where('status', 1);
             }
         ])->having('user_earnings_count', '>', 0)
             ->orderBy('user_earnings_count', 'DESC')
@@ -154,23 +157,24 @@ class DashboardController extends Controller
 
         /* Total Earning data of admin Statics */
         $incomeQuery = new UserEarning();
+
         $incomeTodayTotal = Helper::thousandsFormat(
-            $incomeQuery->whereDate('created_at', Carbon::today())->sum('admin_earning')
+            $incomeQuery->where('status', 1)->whereDate('created_at', Carbon::today())->sum('admin_earning')
         );
         $incomeWeeklyTotal = Helper::thousandsFormat(
-            $incomeQuery->whereBetween(
+            $incomeQuery->where('status', 1)->whereBetween(
                 'created_at',
                 [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]
             )->sum('admin_earning')
         );
         $incomeMonthTotal = Helper::thousandsFormat(
-            $incomeQuery->whereMonth(
+            $incomeQuery->where('status', 1)->whereMonth(
                 'created_at',
                 '=',
                 Carbon::now()->month
             )->sum('admin_earning')
         );
-        $incomeTotal = Helper::thousandsFormat($incomeQuery->sum('admin_earning'));
+        $incomeTotal = Helper::thousandsFormat($incomeQuery->where('status', 1)->sum('admin_earning'));
 
         /* Saved Product and Customer Statics */
         $savedProductTotal = Helper::thousandsFormat(Product::count());

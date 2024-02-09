@@ -14,7 +14,9 @@ use App\Models\Contact;
 use App\Models\User;
 use App\Models\State;
 use App\Models\City;
+use App\Models\Friend;
 use App\Models\Locality;
+use App\Models\Marketing;
 use App\Models\RecentSearch;
 use App\Models\Page;
 use App\Repositories\UserRepository;
@@ -219,7 +221,7 @@ class CommonController extends Controller
     {
         $data = [];
         try {
-            $user = $request->get('Auth');
+            $authUser = $request->get('Auth');
             $validator =  (object) Validator::make($request->all(), [
                 'contacts' => 'required',
             ]);
@@ -229,28 +231,50 @@ class CommonController extends Controller
             $contacts = $contactData = (array) $request->request->get('contacts');
             $phoneNumbers = array_column($contacts, 'number');
 
-            $existUsers = User::whereIn('phone_number', $phoneNumbers)->where('parent_id', 0)->get();
-
+            $existUsers = User::whereIn('phone_number', $phoneNumbers)->get();
+            $friends = [];
+            $syncByUserId = $authUser->id;
             if (!empty($contacts)) {
                 foreach ($contacts as $cKey => $contact) {
-                    $contacts[$cKey]['user_id'] = $user->id;
-                    $contacts[$cKey]['cid'] = $contact['id'];
-                    unset($contacts[$cKey]['id']);
-                    $contactData[$cKey]['exist'] = false;
-                    $contactData[$cKey]['profile'] = (object) [];
-                    if ($existUsers->count() > 0) {
-                        foreach ($existUsers as $user) {
-                            if ($contact['number'] == $user->phone_number) {
-                                $contactData[$cKey]['exist'] = true;
-                                $contactData[$cKey]['profile'] = $user;
+                    if (strlen($contact['number']) > 5) {                    
+                        $contacts[$cKey]['cid'] = $contact['id'];
+                        unset($contacts[$cKey]['id']);
+                        $contactData[$cKey]['exist'] = false;
+                        $contactData[$cKey]['profile'] = (object) [];
+                        $contacts[$cKey]['if_user_existing_id'] = $ifUserExistingId = 0;
+                        $contacts[$cKey]['sync_by_user_id'] = $syncByUserId;
+                        if ($existUsers->count() > 0) {
+                            foreach ($existUsers as $user) {
+                                if ($contact['number'] == $user->phone_number) {
+                                    $contactData[$cKey]['exist'] = true;
+                                    $contactData[$cKey]['profile'] = $user;
+                                    $contacts[$cKey]['if_user_existing_id'] = $ifUserExistingId = $user->id;
+                                    if ($syncByUserId != $ifUserExistingId) {
+                                        $friends[] = [
+                                            'user_id' => $syncByUserId,
+                                            'friend_id' => $ifUserExistingId
+                                        ];
+                                    }
+                                }
                             }
                         }
+                        ContactSync::updateOrCreate(
+                            [
+                                'number' => $contact['number']
+                            ],
+                            [
+                                'sync_by_user_id' => $syncByUserId,
+                                'if_user_existing_id' => $ifUserExistingId,
+                                'code' => $contact['code'],
+                                'cid' => $contact['id'],
+                                'name' => $contact['name'],
+                                'number' => $contact['number']
+                            ]
+                        );
                     }
                 }
             }
-            $uniquely = ['number'];
-            $update = ['user_id', 'code', 'cid', 'name'];
-            ContactSync::upsert($contacts, $update, $uniquely);
+            Friend::upsert($friends, ['user_id', 'friend_id'], ['user_id', 'friend_id']);
             $data['status'] = true;
             $data['code'] = config('response.HTTP_OK');
             $data['message'] = ApiGlobalFunctions::messageDefault('list_found');
@@ -399,7 +423,7 @@ class CommonController extends Controller
         $data = [];
         try {
             $validator = Validator::make($request->all(), [
-                'keyword' => 'required',
+                'keyword' => 'nullable',
                 'state_id' => 'nullable',
             ]);
             if ($validator->fails()) {
@@ -454,7 +478,7 @@ class CommonController extends Controller
         $data = [];
         try {
             $validator = Validator::make($request->all(), [
-                'keyword' => 'required',
+                'keyword' => 'nullable',
                 'city_id' => 'nullable',
             ]);
             if ($validator->fails()) {
@@ -505,6 +529,7 @@ class CommonController extends Controller
             $authUserId = $request->get('Auth')->id;
             $validator = Validator::make($request->all(), [
                 'type' => 'required',
+                'state_id' => 'nullable',
                 'city_id' => 'nullable',
                 'locality_id' => 'nullable',
             ]);
@@ -520,6 +545,9 @@ class CommonController extends Controller
             }
             if ($request->input('locality_id', 0) > 0 && $update['search_type'] == 'locality') {
                 $recentSearch->locality_id = $update['locality_id'] = $request->input('locality_id', 0);
+            }
+            if ($request->input('state_id', 0) > 0 && $update['search_type'] == 'state') {
+                $recentSearch->state_id = $update['state_id'] = $request->input('state_id', 0);
             }
             if (RecentSearch::where($update)->first()) {
                 // $addUpdateRecord = $recentSearchUpdate->save();
@@ -569,13 +597,17 @@ class CommonController extends Controller
                 'recent_searches.search_type' => 'city',
                 'recent_searches.user_id' => $authUserId,
             ]);
+            $stateQuery = $recentSearchQuery->where([
+                'recent_searches.search_type' => 'state',
+                'recent_searches.user_id' => $authUserId,
+            ]);
             $localityQuery = $localityQuery->with([
                 'locality' => function($q) {
-                    $q->select('id', 'name', 'city_id')->with([
-                        'city' => function($q) {
-                            $q->select('id', 'name');
-                        }
-                    ]);
+                    $q->select('id', 'name', 'city_id')->with('city', function($q) {
+                        $q->select('id','name', 'state_id',)->with('state', function($q) {
+                            $q->select('id','name');
+                        });
+                    });
                 }
             ]);
             $cityQuery = $cityQuery->with([
@@ -587,11 +619,24 @@ class CommonController extends Controller
                     ]);
                 }
             ]);
+            $stateQuery = $stateQuery->with([
+                'state' => function($q) {
+                    $q->select('id', 'name');
+                }
+            ]);
             $cityData = $cityQuery->limit(5)->get();
             $localityData = $localityQuery->limit(5)->get();
-            
-            if ($cityData->count() > 0 || $localityData->count() > 0) {
+            $stateData = $stateQuery->limit(5)->get();
+            if ($cityData->count() > 0 || $localityData->count() > 0 || $stateData->count() > 0) {
                 $responseData = [];
+                foreach ($localityData as $locality) {
+                    $responseData['locality'][] = [
+                        'id' => $locality->locality->id,
+                        'name' => $locality->locality->name,
+                        'city_id' => $locality->locality->city_id,
+                        'city' => $locality->locality->city,
+                    ];
+                }
                 foreach ($cityData as $city) {
                     $responseData['city'][] = [
                         'id' => $city->city->id,
@@ -600,12 +645,10 @@ class CommonController extends Controller
                         'state' => $city->city->state
                     ];
                 }
-                foreach ($localityData as $locality) {
-                    $responseData['locality'][] = [
-                        'id' => $locality->locality->id,
-                        'name' => $locality->locality->name,
-                        'city_id' => $locality->locality->city_id,
-                        'city' => $locality->locality->city,
+                foreach ($stateData as $state) {
+                    $responseData['state'][] = [
+                        'id' => $state->state->id,
+                        'name' => $state->state->name,
                     ];
                 }
                 $data['status'] = true;
@@ -730,6 +773,83 @@ class CommonController extends Controller
                 $data['status'] = false;
                 $data['code'] = config('response.HTTP_OK');
                 $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+    
+    /**
+     * marketingList
+     *
+     * @param  mixed $request
+     * @return []
+     */
+    public function marketingList(Request $request)
+    {
+        $data = [];
+        $user = $request->get('Auth');
+        try {
+            if ($request->input('limit', false)) {
+                $limit  = $request->input('limit', 0);
+            } else {
+                $limit = config('get.FRONT_END_PAGE_LIMIT');
+            }
+            $query = Marketing::status();
+            $marketingResponse = $query->orderBy('id', 'desc')->paginate($limit);
+            
+            if (!empty($marketingResponse)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = $marketingResponse;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] =  $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /**
+     * marketingBanner
+     *
+     * @param  mixed $request
+     * @return []
+     */
+    public function marketingBanner(Request $request)
+    {
+        $data = [];
+        $user = $request->get('Auth');
+        try {
+            
+            $query = Marketing::status();
+            $marketingResponse = $query->orderBy('id', 'desc')->first();            
+            if (!empty($marketingResponse)) {
+                $data['status'] = true;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_found');
+                $data['data'] = $marketingResponse;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('list_not_found');
             }
         } catch (\Exception $e) {
             $data['status'] = false;

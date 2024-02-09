@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Kyslik\ColumnSortable\Sortable;
 
 class ServiceProduct extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Sortable;
 
     protected $fillable = [
         "product_type",
@@ -159,7 +160,7 @@ class ServiceProduct extends Model
     public function state()
     {
         return $this->belongsTo(State::class, 'state_id');
-    } 
+    }
 
     /**
      * city
@@ -179,8 +180,24 @@ class ServiceProduct extends Model
     public function locality()
     {
         return $this->belongsTo(Locality::class, 'locality_id');
-    }  
+    }
 
+    /**
+     * scopeFilter
+     *
+     * @param  mixed $query
+     * @param  mixed $keyword
+     * @return void
+     */
+    public function scopeFilter($query, $keyword)
+    {
+        if (!empty($keyword)) {
+            $query->where(function ($query) use ($keyword) {
+                $query->orWhere('service_products.title', 'LIKE', '%' . $keyword . '%');
+            });
+        }
+        return $query;
+    }
     /* scopeStatus
      *
      * @param  mixed $query

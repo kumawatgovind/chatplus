@@ -41,11 +41,14 @@ $title = "Ads deleted by admin";
                 {{ Form::open(['url' => route('admin.getDeletedService'),'method' => 'get']) }}
                 <div class="row">
                   <div class="col-md-5 form-group">
-                    {{ Form::text('keyword', app('request')->query('keyword'), ['class' => 'form-control','placeholder' => 'Keyword e.g: Name, Email, Phone number']) }}
+                    {{ Form::text('keyword', app('request')->query('keyword'), ['class' => 'form-control','placeholder'
+                    => 'Keyword e.g: Name, Email, Phone number']) }}
                   </div>
                   <div class="col-md-3 form-group">
-                    <button class="btn btn-success" title="Filter" type="submit"><i class="fa fa-filter"></i> Filter</button>
-                    <a href="{{ route('admin.getDeletedService') }}" class="btn btn-warning" title="Reset"><i class="fa  fa-refresh"></i> Reset</a>
+                    <button class="btn btn-success" title="Filter" type="submit"><i class="fa fa-filter"></i>
+                      Filter</button>
+                    <a href="{{ route('admin.getDeletedService') }}" class="btn btn-warning" title="Reset"><i
+                        class="fa  fa-refresh"></i> Reset</a>
                   </div>
                 </div>
 
@@ -60,37 +63,36 @@ $title = "Ads deleted by admin";
                 <tr>
                   <th style="width: 7%">#</th>
                   <th scope="col">User Name</th>
-                  <th scope="col">@sortablelink('title', 'Ad Name', ['filter' => 'active, visible'], ['rel' => 'nofollow'])</th>
+                  <th scope="col">@sortablelink('title', 'Ad Name', ['filter' => 'active, visible'], ['rel' =>
+                    'nofollow'])</th>
                   <th scope="col">Price</th>
                   <th scope="col">Added On</th>
-                  <th scope="col" width="10%">Status</th>
-                  <th scope="col">Action</th>
+                  <th scope="col">Deleted On</th>
+                  <th scope="col"></th>
                 </tr>
 
               </thead>
-              @if($users->count() > 0)
+              @if($serviceProduct->count() > 0)
               <tbody>
                 @php
-                $i = (($users->currentPage() - 1) * ($users->perPage()) + 1)
+                $i = (($serviceProduct->currentPage() - 1) * ($serviceProduct->perPage()) + 1)
                 @endphp
-                @foreach($users as $user)
-                <tr class="row-{{ $user->id }}">
+                @foreach($serviceProduct as $service)
+                <tr class="row-{{ $service->id }}">
                   <td> {{$i}}. </td>
-                  <td>{{$user->name}}</td>
-                  <td>{{$user->title}}</td>
-                  <td>{{ $user->price}}</td>
-                  <td>{{ $user->service_added ? date(config('get.ADMIN_DATE_FORMAT'), strtotime($user->service_added)) : 'Not Available' }}</td>
+                  <td>{{($service->serviceUser) ? $service->serviceUser->name : 'N/A'}}</td>
                   <td>
-                    @if($user->product_status == 1)
-                    <span class="btn-block btn-success btn-xs text-center">Active</span>
+                    @if($service->title)
+                    {{$service->title}}
                     @else
-                    <span class="btn-block btn-danger btn-xs text-center">In-Active</span>
+                    {{$service->product_type.''.$service->product_for.''.$service->address}}
                     @endif
                   </td>
+                  <td>{{ $service->price}}</td>
+                  <td>{{ $service->created_at->format(config('get.ADMIN_DATE_FORMAT')) }}</td>
+                  <td>{{ $service->deleted_at->format(config('get.ADMIN_DATE_FORMAT')) }}</td>
                   <td>
                     Ad Deleted By admin
-                  <!-- <a href="{{ route('admin.serviceProductShow', $user->id) }}" class="btn btn-warning btn-xs" data-toggle="tooltip" alt="View setting" title="View {{ $user->title }}" data-original-title="View"><i class="fa fa-fw fa-eye"></i></a>
-                  <a href="javascript:void(0);" class="confirmDeleteBtn btn btn-danger btn-xs" data-toggle="tooltip" alt="Delete {{ $user->title }}" title="Delete {{ $user->title }}" data-url="{{ route('admin.serviceProductDelete', $user->service_product_id) }}" data-title="{{ $user->title }}"><i class="fa fa-trash"></i></a> -->
                   </td>
                 </tr>
                 @php
@@ -109,7 +111,7 @@ $title = "Ads deleted by admin";
           </div>
           <!-- /.card-body -->
           <div class="card-footer clearfix">
-            {{ $users->appends(Request::query())->links() }}
+            {{ $serviceProduct->appends(Request::query())->links() }}
           </div>
         </div>
         <!-- /.card -->

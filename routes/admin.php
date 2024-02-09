@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\StatesController;
 use App\Http\Controllers\Admin\CitiesController;
 use App\Http\Controllers\Admin\LocalitiesController;
+use App\Http\Controllers\Admin\MarketingsController;
 
 
 /*
@@ -107,6 +108,7 @@ Route::middleware(['auth:admin', 'prevent.history', 'AdminAuth'])->as('admin.')-
             'states' => StatesController::class,
             'cities' => CitiesController::class,
             'localities' => LocalitiesController::class,
+            'marketings' => MarketingsController::class,
         ]);
         
         Route::get('/blocked', [UsersController::class, 'blockedUsers'])->name('users.blocks');

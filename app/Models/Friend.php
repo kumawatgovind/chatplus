@@ -4,37 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Kyslik\ColumnSortable\Sortable;
 
-class UserEarning extends Model
+class Friend extends Model
 {
-    use HasFactory, Sortable;
-
-    /**
-     * fillable
-     *
-     * @var array
-     */
+    use HasFactory;
     protected $fillable = [
         "user_id",
-        "sponsor_id",
-        "earning",
-        "subscription_price",
-        "admin_earning",
-        "withdrawal",
-        "type",
-        "user_payout_id",
+        "friend_id"
     ];
 
     /**
-     * sortable
+     * The attributes that should be hidden for arrays.
      *
      * @var array
      */
-    public $sortable = ['created_at', 'updated_at'];
+    protected $hidden = [];
 
     /**
-     * appends
+     * The accessors to append to the model's array form.
      *
      * @var array
      */
@@ -51,12 +38,12 @@ class UserEarning extends Model
     }
 
     /**
-     * user
+     * friend
      *
      * @return void
      */
-    public function sponsor()
+    public function friend()
     {
-        return $this->belongsTo(Sponsor::class, 'sponsor_id');
+        return $this->belongsTo(User::class, 'friend_id');
     }
 }

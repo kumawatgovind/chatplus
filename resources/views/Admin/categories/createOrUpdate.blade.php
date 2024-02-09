@@ -51,11 +51,13 @@
                     <span class="help-block">{{ $errors->first('icon') }}</span>
                     @endif
                   </div>
+				  @if(isset($category))
                   <div class="form-group">
                     <div class="form-control">
                     <img src="{{ $category->icon_url }}" alt="" style="width:100%">
                     </div>
                   </div>
+				  @endif
                   <!-- <div class="container">
                     <div class="form form-group">
                       <label>Parent Services</label>

@@ -128,7 +128,7 @@ class ServiceProfile extends Model
     public function state()
     {
         return $this->belongsTo(State::class, 'state_id');
-    } 
+    }
 
     /**
      * city
@@ -148,7 +148,7 @@ class ServiceProfile extends Model
     public function locality()
     {
         return $this->belongsTo(Locality::class, 'locality_id');
-    } 
+    }
 
     /**
      * scopeFilter

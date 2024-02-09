@@ -40,7 +40,7 @@ class SubscriptionsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -88,7 +88,7 @@ class SubscriptionsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -121,7 +121,7 @@ class SubscriptionsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -135,7 +135,7 @@ class SubscriptionsController extends Controller
      * paymentRequest
      *
      * @param  mixed $request
-     * @return json
+     * @return \Illuminate\Http\Response
      */
     public function paymentRequest(Request $request)
     {
@@ -147,6 +147,7 @@ class SubscriptionsController extends Controller
             if ($validator->fails()) {
                 return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
             }
+
             // $authUser = $request->get('Auth');
             // $isReferCodeUser = UserRepository::checkReferralCode($request);
             // $userLevelArray = ReferralSystem::getCurrentLevelArray($authUser->id);
@@ -156,17 +157,25 @@ class SubscriptionsController extends Controller
             $sponsors = SponsorRepository::addSponsors($request);
             extract($sponsors);
             if ($status) {
-                ReferralSystem::manageReferral($request, $sponsorData);
-                $request->merge(['sponsor_id' => $sponsorData->id]);
-                if ($paymentRequest = SubscriptionRepository::paymentRequest($request)) {
-                    $data['status'] = true;
-                    $data['code'] = config('response.HTTP_OK');
-                    $data['message'] = ApiGlobalFunctions::messageDefault('payment_request');
-                    $data['data'] = $paymentRequest;
+                if (ReferralSystem::manageReferral($request, $sponsorData)) {
+                    $request->merge(['sponsor_id' => $sponsorData->id]);
+                    if ($paymentRequest = SubscriptionRepository::paymentRequest($request)) {
+                        $data['status'] = true;
+                        $data['code'] = config('response.HTTP_OK');
+                        $data['message'] = ApiGlobalFunctions::messageDefault('payment_request');
+                        $data['data'] = [
+                            'payment_url' => route('ccAvenueRequest', $paymentRequest->id),
+                            'order_id' => $paymentRequest->id,
+                        ];
+                    } else {
+                        $data['status'] = false;
+                        $data['code'] = config('response.HTTP_OK');
+                        $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+                    }
                 } else {
                     $data['status'] = false;
                     $data['code'] = config('response.HTTP_OK');
-                    $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+                    $data['message'] = ApiGlobalFunctions::messageDefault('referral_code_refer_limit_exceeded');
                 }
             } else {
                 $data['status'] = false;
@@ -180,7 +189,46 @@ class SubscriptionsController extends Controller
             // }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
+            if (config('constants.DEBUG_MODE')) {
+                $data['message'] = 'Error: ' . $e->getMessage();
+            } else {
+                $data['message'] = ApiGlobalFunctions::messageDefault('oops');
+            }
+        }
+        return ApiGlobalFunctions::responseBuilder($data);
+    }
+
+    /**
+     * ccCheckPaymentStatus
+     *
+     * @param  mixed $request
+     * @return \Illuminate\Http\Response
+     */
+    public function ccCheckPaymentStatus(Request $request)
+    {
+        $data = [];
+        try {
+            $validator = (object) Validator::make($request->all(), [
+                'order_id' => 'required',
+            ]);
+            if ($validator->fails()) {
+                return ApiGlobalFunctions::sendError('Validation Error.', $validator->messages(), 404);
+            }
+            if ($paymentStatus = SubscriptionRepository::ccCheckPaymentStatus($request)) {
+                extract($paymentStatus);
+                $data['status'] = $status;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault($dataMessage);
+                $data['data'] = $paymentDetail;
+            } else {
+                $data['status'] = false;
+                $data['code'] = config('response.HTTP_OK');
+                $data['message'] = ApiGlobalFunctions::messageDefault('record_not_found');
+            }
+        } catch (\Exception $e) {
+            $data['status'] = false;
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -194,7 +242,7 @@ class SubscriptionsController extends Controller
      * checkPaymentStatus
      *
      * @param  mixed $request
-     * @return json
+     * @return \Illuminate\Http\Response
      */
     public function checkPaymentStatus(Request $request)
     {
@@ -218,7 +266,7 @@ class SubscriptionsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -228,7 +276,7 @@ class SubscriptionsController extends Controller
         return ApiGlobalFunctions::responseBuilder($data);
     }
 
-     /**
+    /**
      * paymentRequest
      *
      * @param  mixed $request
@@ -251,11 +299,12 @@ class SubscriptionsController extends Controller
                 'user_id' => $authUser->id,
                 'is_default' => 1,
                 'is_kyc' => 1,
-                ])->first();
+            ])->first();
             if (!empty($kycDocument)) {
                 if ($payoutAmount >= $minimumPayout) {
                     $totalTransaction = SponsorRepository::getTransactionHistory($request);
                     $totalTransaction = $totalTransaction['dataTransaction'];
+                    // $totalTransaction['total_remaining'] = 1000;
                     if (!empty($totalTransaction) && $totalTransaction['total_remaining'] > $payoutAmount) {
                         $payoutContact = RazorPayRepository::createPayoutContact($request);
                         extract($payoutContact);
@@ -266,7 +315,7 @@ class SubscriptionsController extends Controller
                                 $payout = RazorPayRepository::createPayout($request, $fundData);
                                 extract($payout);
                                 if ($payoutStatus) {
-                                    if ($payoutRequest = SubscriptionRepository::payoutRequest($request)) {
+                                    if ($payoutRequest = SubscriptionRepository::payoutRequest($request, $payoutData)) {
                                         $data['status'] = true;
                                         $data['code'] = config('response.HTTP_OK');
                                         $data['message'] = ApiGlobalFunctions::messageDefault('payout_success');
@@ -308,7 +357,7 @@ class SubscriptionsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {
@@ -342,7 +391,7 @@ class SubscriptionsController extends Controller
             }
         } catch (\Exception $e) {
             $data['status'] = false;
-            $data['code'] =  $e->getCode();
+            $data['code'] = $e->getCode();
             if (config('constants.DEBUG_MODE')) {
                 $data['message'] = 'Error: ' . $e->getMessage();
             } else {

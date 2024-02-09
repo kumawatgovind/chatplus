@@ -4,16 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class UserStatus extends Model
+class Status extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     /**
      * table
      *
      * @var string
      */
-    protected $table = 'user_status';
+    protected $table = 'statuses';
     /**
      * fillable
      *
@@ -21,20 +22,20 @@ class UserStatus extends Model
      */
     protected $fillable = [
         'user_id',
-        'status_type',
-        'status_text',
-        'status'
+        'media_type',
     ];
 
     /**
-     * userStatusMedia
+     * statusMedias
      *
      * @return void
      */
-    public function userStatusMedia()
+    public function statusMedias()
     {
-        return $this->hasMany(\App\Models\UserStatusMedia::class, 'status_id', 'id');
+        return $this->hasMany(StatusMedia::class, 'status_id', 'id');
     }
+
+
 
     /**
      * user

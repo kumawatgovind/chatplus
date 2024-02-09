@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayoutController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\CommonController;
+use App\Http\Controllers\CCAvenueController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -65,6 +68,13 @@ Route::get('/check-route', [PaymentController::class, 'checkRoute']);
 Route::post('/webhook/get-payout-record', [PayoutController::class, 'payoutWebhook']);
 Route::get('/check-payout', [PayoutController::class, 'checkRoute']);
 Route::get('/page/{slug}', [PageController::class, 'getPage'])->name('frontend.page');
+Route::get('/clear-data', [CommonController::class, 'clearData'])->name('frontend.clear-data');
+Route::get('ccAvenueRequest/{id}', [CCAvenueController::class, 'ccAvenueRequestHandler'])->name('ccAvenueRequest');
+Route::post('ccAvenueResponseSuccess', [CCAvenueController::class, 'ccAvenueResponseHandler'])
+    ->name('ccAvenueResponseSuccess');
+Route::post('ccAvenueResponseCancel', [CCAvenueController::class, 'ccAvenueResponseHandler'])
+    ->name('ccAvenueResponseCancel');
+
 // Route::middleware([
 //     'auth:sanctum',
 //     config('jetstream.auth_session'),

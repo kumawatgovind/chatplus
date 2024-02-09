@@ -267,14 +267,24 @@
                             @foreach ($topSellerEarning as $topSeller)
                             <li class="item">
                                 <div class="product-img">
-                                    <img src="/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image">
+                                    <img src="{{ $topSeller->profile_image ? asset('storage/profile/'.$topSeller->profile_image) : '/img/no-icon.jpg' }}"
+                                        class="img-circle elevation-2" alt="User Image">
                                 </div>
                                 <div class="product-info">
                                     <a href="javascript:void(0)" class="product-title">{{ $topSeller->name }}
-                                        @if($topSeller->user_earnings_count <= 100) <span class="label label-danger pull-right"><i class="fas fa-rupee-sign"></i> {{ \App\Helpers\Helper::thousandsFormat($topSeller->user_earnings_count) }}</span>
-                                            @elseif($topSeller->user_earnings_count <= 500) <span class="label label-warning pull-right"><i class="fas fa-rupee-sign"></i> {{ \App\Helpers\Helper::thousandsFormat($topSeller->user_earnings_count) }}</span>
+                                        @if($topSeller->user_earnings_count <= 100) <span
+                                            class="label label-danger pull-right"><i class="fas fa-rupee-sign"></i> {{
+                                            \App\Helpers\Helper::thousandsFormat($topSeller->user_earnings_count)
+                                            }}</span>
+                                            @elseif($topSeller->user_earnings_count <= 500) <span
+                                                class="label label-warning pull-right"><i class="fas fa-rupee-sign"></i>
+                                                {{ \App\Helpers\Helper::thousandsFormat($topSeller->user_earnings_count)
+                                                }}</span>
                                                 @else
-                                                <span class="label label-success pull-right"><i class="fas fa-rupee-sign"></i> {{ \App\Helpers\Helper::thousandsFormat($topSeller->user_earnings_count) }}</span>
+                                                <span class="label label-success pull-right"><i
+                                                        class="fas fa-rupee-sign"></i> {{
+                                                    \App\Helpers\Helper::thousandsFormat($topSeller->user_earnings_count)
+                                                    }}</span>
                                                 @endif
                                     </a>
                                 </div>
@@ -385,14 +395,22 @@
                             @foreach ($topAdsList as $topAds)
                             <li class="item">
                                 <div class="product-img">
-                                    <img src="/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image">
+                                    <img src="{{ $topAds->profile_image ? asset('storage/profile/'.$topAds->profile_image) : '/img/no-icon.jpg' }}"
+                                        class="img-circle elevation-2" alt="User Image">
                                 </div>
                                 <div class="product-info">
                                     <a href="javascript:void(0)" class="product-title">{{ $topAds->name }}
-                                        @if($topAds->service_product_count <= 50) <span class="label label-danger pull-right">{{ \App\Helpers\Helper::thousandsFormat($topAds->service_product_count) }}</span>
-                                            @elseif($topAds->service_product_count <= 100) {{ \App\Helpers\Helper::thousandsFormat($topAds->service_product_count) }}</span>
+                                        @if($topAds->service_product_count <= 50) <span
+                                            class="label label-danger pull-right">{{
+                                            \App\Helpers\Helper::thousandsFormat($topAds->service_product_count)
+                                            }}</span>
+                                            @elseif($topAds->service_product_count <= 100) {{
+                                                \App\Helpers\Helper::thousandsFormat($topAds->service_product_count)
+                                                }}</span>
                                                 @else
-                                                <span class="label label-success pull-right">{{ \App\Helpers\Helper::thousandsFormat($topAds->service_product_count) }}</span>
+                                                <span class="label label-success pull-right">{{
+                                                    \App\Helpers\Helper::thousandsFormat($topAds->service_product_count)
+                                                    }}</span>
                                                 @endif
                                     </a>
                                 </div>

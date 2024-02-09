@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\State;
 use App\Models\ServiceProduct;
 use App\Helpers\Helper;
+use App\Models\Locality;
 use Validator, Gate, DB;
 
 
@@ -143,7 +144,7 @@ class CitiesController extends Controller
             $city = City::findOrFail($id);
             $adsQuery = ServiceProduct::query();
             if (!empty($city)) {
-                $locality = Locality::where('city_id', $state->id);
+                $locality = Locality::where('city_id', $id);
                 $adsQuery->where('city_id', $city->id);
                 if ($adsQuery->count() > 0 || $locality->count() > 0) {
                     $response = ['status' => false, 'message' => "City not able to delete due to some associated data."];

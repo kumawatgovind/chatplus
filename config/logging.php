@@ -119,6 +119,18 @@ return [
             'level' => 'debug',
 			'days' => 7,
         ],
+        'payout' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payout/payout.log'),
+            'level' => 'debug',
+			'days' => 7,
+        ],
+        'stripPayment' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payout/stripPayment.log'),
+            'level' => 'debug',
+			'days' => 7,
+        ],
     ],
 
 ];

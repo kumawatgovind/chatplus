@@ -5,16 +5,14 @@ namespace App\Traits;
 use App\Models\Booking;
 use App\Models\User;
 
-trait ApiGlobalFunctions
-{
+trait ApiGlobalFunctions {
 
     /**
      * success response method.
      *
      * @return \Illuminate\Http\Response
      */
-    public static function sendResponse($result, $message)
-    {
+    public static function sendResponse($result, $message) {
         $response = [
             'status' => true,
             'code' => 200,
@@ -30,14 +28,13 @@ trait ApiGlobalFunctions
      *
      * @return \Illuminate\Http\Response
      */
-    public static function responseBuilder($data)
-    {
+    public static function responseBuilder($data) {
         $response = [
             'status' => $data['status'] ?? false,
             'code' => $data['code'],
             'message' => $data['message'],
         ];
-        if (isset($data['data'])) {
+        if(isset($data['data'])) {
             $response['data'] = $data['data'];
         }
         return response()->json($response);
@@ -48,9 +45,8 @@ trait ApiGlobalFunctions
      *
      * @return \Illuminate\Http\Response
      */
-    public static function sendError($error, $errorMessages = [], $code = 200)
-    {
-        if (!empty($errorMessages)) {
+    public static function sendError($error, $errorMessages = [], $code = 200) {
+        if(!empty($errorMessages)) {
             $errorMsg = $errorMessages;
         } else {
             $errorMsg[] = $error;
@@ -69,8 +65,7 @@ trait ApiGlobalFunctions
      *
      * @return \Illuminate\Http\Response
      */
-    public static function sendErrorForVersion($error, $errorMessages = [], $code = 404)
-    {
+    public static function sendErrorForVersion($error, $errorMessages = [], $code = 404) {
         $response = [
             'status' => false,
             'code' => config('response.HTTP_OK'),
@@ -80,8 +75,7 @@ trait ApiGlobalFunctions
         return response()->json($response, $code);
     }
 
-    public static function messageDefault($label)
-    {
+    public static function messageDefault($label) {
         $msgArray = [
             'mobile_verified' => 'Number found in our DB.',
             'verification_failed' => 'Number not found in our DB.',
@@ -131,21 +125,25 @@ trait ApiGlobalFunctions
             'user_subscribed' => 'User subscribed.',
             'user_not_subscribed' => 'User not subscribed.',
             'referral_code_notActive' => 'Referral code not active.',
+            'referral_code_refer_limit_exceeded' => 'Referral code refer limit exceeded.',
             'payment_request' => 'Payment request.',
             'invalid_payload' => 'Invalid payload.',
             'invalid_signature' => 'Invalid signature.',
             'payment_success' => 'Payment successfully.',
+            'payment_cancel' => 'Payment cancel.',
+            'payment_failed' => 'Payment failed.',
+            'payment_inProgress' => 'Payment inProgress.',
             'bookmark_success' => 'Bookmark update successfully.',
             'payout_minimum_not_available' => 'You need minimum Rs. %s amount in your wallet for withdrawal.',
             'payout_amount_not_available' => 'Your wallet balance (%s) less then requested amount.',
             'payout_success' => 'Payout initiated successfully.',
             'update_kyc' => 'Please update KYC first before the payout initiate.',
+            'update_successfully' => 'Record successfully updated.',
         ];
         return isset($msgArray[$label]) ? $msgArray[$label] : $label;
     }
 
-    public static function sendNotificationForTesting($fcm = '')
-    {
+    public static function sendNotificationForTesting($fcm = '') {
         $device_type = 'android';
         $params = [
             'fcm_token' => $fcm,
@@ -156,7 +154,7 @@ trait ApiGlobalFunctions
             'notification_item_id' => 0
         ];
         $status = false;
-        if ($device_type == 'iOS' || $device_type == 'ios') {
+        if($device_type == 'iOS' || $device_type == 'ios') {
             self::ios($params);
             $status = true;
         } else {
@@ -165,18 +163,17 @@ trait ApiGlobalFunctions
         }
         return $status;
     }
-    
+
     /**
      * static
      *
      * @param  mixed $params
      * @return boolean
      */
-    public static function sendNotification($params = [])
-    {
+    public static function sendNotification($params = []) {
         $device_type = 'android';
         $status = false;
-        if ($device_type == 'iOS' || $device_type == 'ios') {
+        if($device_type == 'iOS' || $device_type == 'ios') {
             self::ios($params);
             $status = true;
         } else {
@@ -188,8 +185,7 @@ trait ApiGlobalFunctions
 
 
 
-    public static function android($params = [])
-    {
+    public static function android($params = []) {
         $fcmToken = $params['fcm_token'];
         $notificationTitle = $params['notification_title'];
         $notificationMessage = $params['notification_message'];
@@ -197,9 +193,9 @@ trait ApiGlobalFunctions
         $notificationSubType = $params['notification_sub_type'] ?? '';
         $notificationStatus = $params['notification_status'] ?? '';
         $notificationItemId = $params['notification_item_id'] ?? 0;
-        
+
         // API access key from Google API's Console
-        $server_key = 'AAAA_Pf6c8o:APA91bGb1Iqnyr5ol51mWRkOeczcEFT9Hm1tfJ1ppPJ39ey4HJotoaOIb-SloVUDxk7V6AQ4drRsEKfURLM9surWnNL29RkmWTeOVhJz531Lq4CUR3ZAKxS3EVbBYwDBhGz12AxoDvVe';
+        $server_key = config('constants.FIRE_BASE_KEY');
 
         $msg = array(
             'sound' => 'default',
@@ -211,7 +207,7 @@ trait ApiGlobalFunctions
                 'status' => $notificationStatus,
                 'title' => $notificationTitle,
                 'body' => $notificationMessage,
-                )
+            )
         );
 
         // echo "<prE>"; print_r($msg); die('android'); 
@@ -223,7 +219,7 @@ trait ApiGlobalFunctions
         );
 
         $headers = array(
-            'Authorization: key=' . $server_key,
+            'Authorization: key='.$server_key,
             'Content-Type: application/json'
         );
 
@@ -239,8 +235,8 @@ trait ApiGlobalFunctions
         $results = json_decode($result);
 
         $status = false;
-        if (isset($results)) {
-            if ($results->success == 1) {
+        if(isset($results)) {
+            if($results->success == 1) {
                 $status = true;
             }
         }
@@ -254,87 +250,86 @@ trait ApiGlobalFunctions
      * Des : send puch notification by fcm
      */
 
-     public static function ios($params = [])
-    {
+    public static function ios($params = []) {
         //$server_key = 'AIzaSyDQR7mNCTAyv1KRfi6B8ySeZGMJmSqSZ4A';
         // $server_key = 'AAAAHmrDJ_w:APA91bH7UPRRCUh_2WOkZ1Rzaltih5PibtEk9jbvPOy2p8lfl2ZSBDJgPMsFdoJg6Itv8oUT7RNE5Ibv-2emxoLVxJUZZ_QDGAPeU_xSJudFjlsK1md2ZbNG2pDFCVRGOFZXC_JBBUTqK5rrZRgOKiMbNzlJoBFkDg';
         // $server_key = 'AAAAuVmXPqU:APA91bG5V-6eN9KPI1x7LVKOKcSYXjPssJOdLHq5ERzOXc_lVnfOPD3WGhpWFt_V2a_tBX7atGaB96cqP9b5I312NV7Zz4Blg9KdtQ4kN5PMUepsomil0DBdjc7-Dz4gaD72xu4c_WwN';
         // if (!empty($deviceId)) {
-            // $device_badge['badge_count'] = 1;
-            // $msg = array(
-            //     'body' => $senderMsg,
-            //     'icon' => 'myicon',
-            //     'sound' => 'default'
-            // );
+        // $device_badge['badge_count'] = 1;
+        // $msg = array(
+        //     'body' => $senderMsg,
+        //     'icon' => 'myicon',
+        //     'sound' => 'default'
+        // );
 
-            // $data = array(
-            //     'icon' => 'myicon',
-            //     'sound' => 'default',
-            //     'priority' => 'high'
-            // );
+        // $data = array(
+        //     'icon' => 'myicon',
+        //     'sound' => 'default',
+        //     'priority' => 'high'
+        // );
 
-            // $fields = array(
-            //     'to' => $deviceId,
-            //     'notification' => $msg,
-            //     'data' => $data,
-            //     'priority' => 'high',
-            //     'content_available' => true
-            // );
-            // $bookingid = isset($booking_id) ? $booking_id : '';
+        // $fields = array(
+        //     'to' => $deviceId,
+        //     'notification' => $msg,
+        //     'data' => $data,
+        //     'priority' => 'high',
+        //     'content_available' => true
+        // );
+        // $bookingid = isset($booking_id) ? $booking_id : '';
 
-            // /*$msg = array(
-            //     'title' => '',
-            //     'body' => $senderMsg,
-            //     'data' => array('type' => $notificationType,'booking_id'=>$bookingid)
-            // );*/
+        // /*$msg = array(
+        //     'title' => '',
+        //     'body' => $senderMsg,
+        //     'data' => array('type' => $notificationType,'booking_id'=>$bookingid)
+        // );*/
 
-            // $formdata['message'] = $senderMsg;
-            // $bookingid = isset($booking_id) ? $booking_id : '';
-            // $msg = array(
-            //     'title' => '',
-            //     'body' => $senderMsg,
-            //     'type' => $notificationType,
-            //     'booking_id' => isset($booking_id) ? $booking_id : '',
-            //     'show_in_foreground' => true,
-            //     'sound' => 'default',
-            //     // 'color' => '#EC1C2B',
-            //     'priority' => 'high',
-            //     'icon' => url('/') . 'img/app_icon.png',
-            //     'data' => array('type' => $notificationType, 'booking_id' => $bookingid, 'icon' => url('/') . 'img/app_icon.png')
-            // );
+        // $formdata['message'] = $senderMsg;
+        // $bookingid = isset($booking_id) ? $booking_id : '';
+        // $msg = array(
+        //     'title' => '',
+        //     'body' => $senderMsg,
+        //     'type' => $notificationType,
+        //     'booking_id' => isset($booking_id) ? $booking_id : '',
+        //     'show_in_foreground' => true,
+        //     'sound' => 'default',
+        //     // 'color' => '#EC1C2B',
+        //     'priority' => 'high',
+        //     'icon' => url('/') . 'img/app_icon.png',
+        //     'data' => array('type' => $notificationType, 'booking_id' => $bookingid, 'icon' => url('/') . 'img/app_icon.png')
+        // );
 
-            // // echo "<prE>"; print_r($msg); die('ios'); 
-            // $fields = array(
-            //     'to' => $deviceId,
-            //     'notification' => $msg,
-            //     'data' => $msg
-            // );
+        // // echo "<prE>"; print_r($msg); die('ios'); 
+        // $fields = array(
+        //     'to' => $deviceId,
+        //     'notification' => $msg,
+        //     'data' => $msg
+        // );
 
-            // $url = 'https://fcm.googleapis.com/fcm/send';
-            // $headers = array(
-            //     'Authorization:key=' . $server_key,
-            //     'Content-Type: application/json'
-            // );
+        // $url = 'https://fcm.googleapis.com/fcm/send';
+        // $headers = array(
+        //     'Authorization:key=' . $server_key,
+        //     'Content-Type: application/json'
+        // );
 
-            // $ch = curl_init();
-            // curl_setopt($ch, CURLOPT_URL, $url);
-            // curl_setopt($ch, CURLOPT_POST, false);
-            // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            // curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
-            // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            // $result = curl_exec($ch);
-            // $results = json_decode($result);
+        // $ch = curl_init();
+        // curl_setopt($ch, CURLOPT_URL, $url);
+        // curl_setopt($ch, CURLOPT_POST, false);
+        // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        // curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // $result = curl_exec($ch);
+        // $results = json_decode($result);
 
-            // $status = false;
-            // if (isset($results)) {
-            //     if ($results->success == 1) {
-            //         $status = true;
-            //     }
-            // }
-            // curl_close($ch);
-            // return $status;
-            //ob_flush();
+        // $status = false;
+        // if (isset($results)) {
+        //     if ($results->success == 1) {
+        //         $status = true;
+        //     }
+        // }
+        // curl_close($ch);
+        // return $status;
+        //ob_flush();
         // }
     }
 }

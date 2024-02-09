@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
@@ -19,6 +20,7 @@ class User extends Authenticatable
     use Notifiable;
     use TwoFactorAuthenticatable;
     use Sortable;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -259,11 +261,11 @@ class User extends Authenticatable
     {
         $date = date('Y-m-d H:i:s');
         return $this->hasOne(UserSubscription::class, 'user_id', 'id')
-        ->where('start_date', '<=', $date)
-        ->where('end_date', '>=', $date)
-        ->where('is_active', 1);
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->where('is_active', 1);
     }
-    
+
 
     /**
      * userStatus
@@ -293,7 +295,7 @@ class User extends Authenticatable
     public function kycVerified()
     {
         return $this->hasOne(KycDocument::class, 'user_id', 'id')
-        ->where('is_kyc', 1);
+            ->where('is_kyc', 1);
     }
     /**
      * contactSync
