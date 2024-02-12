@@ -278,7 +278,7 @@ return [
     'DEFAULT_COUNTRY' => 1,
     'NOTIFICATION_MESSAGE' => $notificationMessage,
     'TRANSACTION_INIT' => "https://secure.ccavenue.com/transaction/initTrans",
-    'CC_IS_LIVE' => true,
+    'CC_IS_LIVE' => false,
     'CC_ACCESS_CODE_TEST' => "AVEM24KJ45BU87MEUB",
     'CC_MERCHANT_ID' => "2955246",
     'CC_WORKING_KEY_TEST' => "FF618224ED48BA71BE3A13C8861D6352",

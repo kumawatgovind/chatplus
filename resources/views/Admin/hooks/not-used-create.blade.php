@@ -47,8 +47,8 @@
                             <div class="form-group">
                                 <label for="status">Status</label> 
                                 <select name="status" class="form-control" id="status">
-                                    <option {{ (old("status") ? old("status") : (!empty($emailHook) ? $emailHook->description : null))  === 1 ? "selected='selected'":"" }} value="1">Active</option>
-                                    <option {{ (old("status") ? old("status") : (!empty($emailHook) ? $emailHook->description : null))  === 0 ? "selected='selected'":"" }} value="0">Inactive</option>
+                                    <option {{ (old('status') ? old('status') : (!empty($emailHook) ? $emailHook->description : null))  === 1 ? "selected='selected'":"" }} value="1">Active</option>
+                                    <option {{ (old('status') ? old('status') : (!empty($emailHook) ? $emailHook->description : null))  === 0 ? "selected='selected'":"" }} value="0">Inactive</option>
                                 </select>
                             </div>
                         </div>
